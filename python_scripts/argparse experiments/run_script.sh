@@ -1,0 +1,1 @@
+python3 mutually_exclusive.py --subtract 6 2
