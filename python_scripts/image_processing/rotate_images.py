@@ -85,10 +85,12 @@ def rotate_images(input_folder, output_folder, k):
     for image_name in os.listdir(input_folder):
         # Read image
         image = cv2.imread(os.path.join(input_folder, image_name))
-        # Rotate image
-        rotated_image = rotate_image(image, k * 90)
+
+        if image is not None:
+            # Rotate image
+            rotated_image = rotate_image(image, k * 90)
         # Save image
-        cv2.imwrite(os.path.join(output_folder, image_name), rotated_image)
+            cv2.imwrite(os.path.join(output_folder, image_name), rotated_image)
 
 
 # Define main function
