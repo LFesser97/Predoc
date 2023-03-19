@@ -27,7 +27,7 @@ class JapaneseDataset:
     """
     This class contains all information about a Japanese dataset.
     """
-    def __init(self):
+    def __init__(self):
         self.dataset = None
         self.networks = {}
         self.knowledge_graphs = {}
