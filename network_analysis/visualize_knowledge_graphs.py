@@ -13,6 +13,7 @@ This file contains all functions for visualizing knowledge graphs.
 import networkx as nx
 import matplotlib.pyplot as plt
 
+
 # functions for visualizing knowledge graphs
 
 def visualize_knowledge_graph(knowledge_graph: nx.DiGraph) -> None:
@@ -31,24 +32,34 @@ def visualize_knowledge_graph(knowledge_graph: nx.DiGraph) -> None:
 
     # color the nodes according to their type
     node_colors = []
+    node_legend = {}
 
     for node in knowledge_graph.nodes():
         if knowledge_graph.nodes[node]["type"] == "company":
             node_colors.append("orange")
+            node_legend.append(("Company", "orange"))
+
         elif knowledge_graph.nodes[node]["type"] == "Bank/ Individual":
             node_colors.append("lightblue")
+            node_legend.append(("Bank/ Individual", "lightblue"))
+
         else:
             node_colors.append("black")
             print("The node type is not known.")
 
     # color the edges according to their type
     edge_colors = []
+    edge_legend = {}
 
     for edge in knowledge_graph.edges():
         if knowledge_graph.edges[edge]["type"] == "supplier":
             edge_colors.append("red")
+            edge_legend.append(("Supplier", "red"))
+
         elif knowledge_graph.edges[edge]["type"] == "shareholder":
             edge_colors.append("blue")
+            edge_legend.append(("Shareholder", "blue"))
+
         else:
             edge_colors.append("black")
             print("The edge type is not known.")
@@ -67,7 +78,7 @@ def visualize_knowledge_graph(knowledge_graph: nx.DiGraph) -> None:
 
     # add two legends, one for the edge colors and one for the node colors -> WILL NEED TO GENERALIZE THIS
 
-    edge_legend = plt.legend([plt.Line2D([0], [0], color="red", lw=4), plt.Line2D([0], [0], color="blue", lw=4)], ["Supplier", "Shareholder"], loc="upper left", title="Edge Color")
-    node_legend = plt.legend([plt.Line2D([0], [0], color="orange", lw=4), plt.Line2D([0], [0], color="lightblue", lw=4)], ["Company", "Bank/Individual"], loc="lower right", title="Node Color")
+    edge_legend = plt.legend([plt.Line2D([0], [0], color=element[1], lw=4) for element in edge_legend], [element[0] for element in edge_legend], loc="upper left", title="Edge Color")
+    node_legend = plt.legend([plt.Line2D([0], [0], color=element[1], lw=4) for element in node_legend], [element[0] for element in node_legend], loc="lower right", title="Node Color")
     plt.gca().add_artist(edge_legend)
     plt.show()

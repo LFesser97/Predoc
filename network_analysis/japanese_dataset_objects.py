@@ -28,6 +28,7 @@ class JapaneseDataset:
     This class contains all information about a Japanese dataset.
     """
     def __init__(self):
+        self.network_types = ["supplier", "shareholder"]
         self.dataset = None
         self.networks = {}
         self.knowledge_graphs = {}
@@ -64,7 +65,7 @@ class JapaneseDataset:
         None.
             The created network is appended to the networks dictionary.
         """
-        assert network_type in ["supplier", "shareholder"], "Unknown network type."
+        assert network_type in self.network_types, "Unknown network type."
 
         if network_type == "supplier":
             network = cn.create_supplier_network(self.dataset)
@@ -108,7 +109,7 @@ class JapaneseDataset:
         None.
             Plots the network.
         """
-        assert network_type in ["supplier", "shareholder"], "Unknown network type."
+        assert network_type in self.network_types, "Unknown network type."
 
         if network_type == "supplier":
             assert network_type in self.networks, "The supplier network has not been created yet."
@@ -138,7 +139,7 @@ class JapaneseDataset:
         vkg.visualize_knowledge_graph(self.knowledge_graphs[knowledge_graph])
 
 
-    def connect_networks(self, network_type1: str, network_type2: str) -> None: 
+    def connect_networks(self, network_type1: str, network_type2: str) -> None:
         """
         This method connects two networks into a knowledge graph.
 
@@ -146,17 +147,17 @@ class JapaneseDataset:
         ----------
         network_name1 : str
             The name of the first network.
+
         network_name2 : str
             The name of the second network.
 
         Returns
         -------
         None.
-            The created knowledge graph is appended to the knowledge graphs dictionary.         
+            The created knowledge graph is appended to the knowledge graphs dictionary.
         """
-        assert network_type1 in ["supplier", "shareholder"], "Unknown network type."
-        assert network_type2 in ["supplier", "shareholder"], "Unknown network type."
-
+        assert network_type1 in self.network_types and network_type2 in self.network_types, "Unknown network type."
+        
         assert network_type1 in self.networks, "The first network has not been created yet."
         assert network_type2 in self.networks, "The second network has not been created yet."
 
