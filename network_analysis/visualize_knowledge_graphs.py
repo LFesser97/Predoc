@@ -32,7 +32,7 @@ def visualize_knowledge_graph(knowledge_graph: nx.DiGraph) -> None:
 
     # color the nodes according to their type
     node_colors = []
-    node_legend = {}
+    node_legend = set()
 
     for node in knowledge_graph.nodes():
         if knowledge_graph.nodes[node]["type"] == "company":
@@ -49,7 +49,7 @@ def visualize_knowledge_graph(knowledge_graph: nx.DiGraph) -> None:
 
     # color the edges according to their type
     edge_colors = []
-    edge_legend = {}
+    edge_legend = set()
 
     for edge in knowledge_graph.edges():
         if knowledge_graph.edges[edge]["type"] == "supplier":
