@@ -37,11 +37,11 @@ def visualize_knowledge_graph(knowledge_graph: nx.DiGraph) -> None:
     for node in knowledge_graph.nodes():
         if knowledge_graph.nodes[node]["type"] == "company":
             node_colors.append("orange")
-            node_legend.append(("Company", "orange"))
+            node_legend.add(("Company", "orange"))
 
         elif knowledge_graph.nodes[node]["type"] == "Bank/ Individual":
             node_colors.append("lightblue")
-            node_legend.append(("Bank/ Individual", "lightblue"))
+            node_legend.add(("Bank/ Individual", "lightblue"))
 
         else:
             node_colors.append("black")
@@ -54,11 +54,11 @@ def visualize_knowledge_graph(knowledge_graph: nx.DiGraph) -> None:
     for edge in knowledge_graph.edges():
         if knowledge_graph.edges[edge]["type"] == "supplier":
             edge_colors.append("red")
-            edge_legend.append(("Supplier", "red"))
+            edge_legend.add(("Supplier", "red"))
 
         elif knowledge_graph.edges[edge]["type"] == "shareholder":
             edge_colors.append("blue")
-            edge_legend.append(("Shareholder", "blue"))
+            edge_legend.add(("Shareholder", "blue"))
 
         else:
             edge_colors.append("black")
