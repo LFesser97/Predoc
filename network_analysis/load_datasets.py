@@ -89,7 +89,7 @@ def load_from_json(filename, dataframe):
     accounting_period = dataset["variables"][10]["values"]
 
     # append to dataframe
-    df = dataframe.append({"title": title, "dataset_type": company_type,
+    df = dataframe.append({"title": title, "company_type": company_type,
                            "address": address, "est_date": est_date,
                            "n_stocks_authorized": n_stocks_authorized,
                            "stock_capital": stock_capital, "accounting_period": accounting_period,
