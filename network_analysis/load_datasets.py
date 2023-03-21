@@ -74,7 +74,7 @@ def load_from_json(filename, dataframe):
 
     # only have one company per file
     title = dataset["title"]
-    company_type = dataset["company_type"]
+    company_type = dataset["compnay_type"]
     address = dataset["address"]
     est_date = dataset["variables"][0]["values"][0]
     n_stocks_authorized = dataset["variables"][1]["values"][0]
