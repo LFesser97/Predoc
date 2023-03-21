@@ -88,6 +88,9 @@ def load_from_json(filename, dataframe):
             company_information[column] = np.nan
 
     # concatenate the company information to the dataframe using pd.concat()
-    dataframe = pd.concat([dataframe, pd.DataFrame.from_dict(company_information)], ignore_index=True)
+    company_frame = pd.DataFrame.from_dict(company_information)
+    print(company_frame)
+    print(dataframe)
+    dataframe = pd.concat([dataframe, company_frame], ignore_index=True)
 
     return df
