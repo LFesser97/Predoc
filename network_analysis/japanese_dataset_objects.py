@@ -12,6 +12,7 @@ This file contains the classes for the Japanese datasets.
 
 import networkx as nx
 import pandas as pd
+import os
 
 
 # import other files from this project
@@ -69,6 +70,26 @@ class JapaneseDataset:
 
         elif filename.split(".")[-1] == "json":
             self.dataset = ld.load_from_json(filename, self.dataset)
+
+
+    def read_dataset_from_folder(self, foldername):
+        """
+        This method reads a Japanese dataset from a folder.
+
+        Parameters
+        ----------
+        foldername : str
+            The foldername of the Japanese dataset.
+
+        Returns
+        -------
+        None.
+            The dataset is stored in the dataset attribute.
+        """
+        assert os.path.isdir(foldername), "The foldername is not a directory."
+
+        for filename in os.listdir(foldername):
+            self.read_dataset_from_file(filename)
 
 
     def create_network(self, network_type: str) -> None:
