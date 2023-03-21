@@ -75,7 +75,7 @@ def load_from_json(filename, dataframe):
     # iterate over all companies
     for i in range(len(dataset)):
         # get company
-        company = dataset.iloc[i]
+        company = dataset[i]
 
         # get title
         title = company["title"]
