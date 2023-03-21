@@ -11,14 +11,18 @@ This file contains the classes for the Japanese datasets.
 # import packages
 
 import networkx as nx
+import pandas as pd
 
 
 # import other files from this project
 
 import create_networks as cn
 import visualize_networks as vn
+
 import create_knowledge_graphs as kg
 import visualize_knowledge_graphs as vkg
+
+import load_datasets as ld
 
 
 # define classes
@@ -29,7 +33,17 @@ class JapaneseDataset:
     """
     def __init__(self):
         self.network_types = ["supplier", "shareholder"]
-        self.dataset = None
+        self.dataset_types = ["csv", "json"]
+
+        self.dataset = pd.DataFrame(columns=
+                                    ["title", "company_type",
+                                     "address", "est_date",
+                                     "n_stocks_authorized", "stock_capital",
+                                     "accounting_period", "dividend",
+                                     "personnel", "main_shareholders",
+                                     "n_employee", "banks",
+                                     "locations", "accounting_period"])
+
         self.networks = {}
         self.knowledge_graphs = {}
 
@@ -46,8 +60,15 @@ class JapaneseDataset:
         Returns
         -------
         None.
+            The dataset is stored in the dataset attribute.
         """
-        pass
+        assert filename.split(".")[-1] in self.dataset_types, "Unknown file extension."
+
+        if filename.split(".")[-1] == "csv":
+            raise NotImplementedError
+
+        elif filename.split(".")[-1] == "json":
+            self.dataset = ld.load_from_json(filename, self.dataset)
 
 
     def create_network(self, network_type: str) -> None:
@@ -157,7 +178,7 @@ class JapaneseDataset:
             The created knowledge graph is appended to the knowledge graphs dictionary.
         """
         assert network_type1 in self.network_types and network_type2 in self.network_types, "Unknown network type."
-        
+
         assert network_type1 in self.networks, "The first network has not been created yet."
         assert network_type2 in self.networks, "The second network has not been created yet."
 
