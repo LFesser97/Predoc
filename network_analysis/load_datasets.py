@@ -82,15 +82,7 @@ def load_from_json(filename, dataframe):
     for variable in available_variables:
         company_information[variable] = dataset["variables"][available_variables.index(variable)]["values"]
 
-    # insert NaN for variables that are not available, but are in the dataframe
-    for column in dataframe.columns:
-        if column not in available_variables:
-            company_information[column] = np.nan
-
-    # concatenate the company information to the dataframe using pd.concat()
-    company_frame = pd.DataFrame.from_dict(company_information)
-    print(company_frame)
-    print(dataframe)
-    dataframe = pd.concat([dataframe, company_frame], ignore_index=True)
+    # concatenate the company information to the dataframe
+    df = dataframe.append(company_information, ignore_index=True)
 
     return df
