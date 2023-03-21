@@ -71,29 +71,18 @@ def load_from_json(filename, dataframe):
         dataset = json.load(f)
 
     # only have one company per file
-    title = dataset["title"]
-    company_type = dataset["compnay_type"]
-    address = dataset["address"]
-    est_date = dataset["variables"][0]["values"][0]
-    n_stocks_authorized = dataset["variables"][1]["values"][0]
-    stock_capital = dataset["variables"][2]["values"][0]
-    accounting_period = dataset["variables"][3]["values"][0]
-    dividend = dataset["variables"][4]["values"]
-    personnel = dataset["variables"][5]["values"]
-    main_shareholders = dataset["variables"][6]["values"]
-    n_employee = dataset["variables"][7]["values"][0]
-    banks = dataset["variables"][8]["values"][0]
-    locations = dataset["variables"][9]["values"]
+    company_information = {"title" : dataset["title"],
+                            "company_type" : dataset["compnay_type"],
+                            "address" : dataset["address"]}
+
+    # get list of available variables
+    available_variables = [dataset["variables"][i]["tag"] for i in range(len(dataset["variables"]))]
+
+    # get values for each variable
+    for variable in available_variables:
+        company_information[variable] = dataset["variables"][available_variables.index(variable)]["values"]
 
     # append to dataframe
-    df = dataframe.append({"title": title, "company_type": company_type,
-                           "address": address, "est_date": est_date,
-                           "n_stocks_authorized": n_stocks_authorized,
-                           "stock_capital": stock_capital, "accounting_period": accounting_period,
-                           "dividend": dividend, "personnel": personnel,
-                           "main_shareholders": main_shareholders, "n_employee": n_employee,
-                           "banks": banks, "locations": locations,
-                           "accounting_period": accounting_period},
-                           ignore_index=True)
+    df = dataframe.append(company_information, ignore_index=True)
 
     return df
