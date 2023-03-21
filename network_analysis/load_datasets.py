@@ -40,7 +40,6 @@ def load_from_json(filename, dataframe):
                   {"key": "", "tag": "n_employee", "values": [""]}, 
                   {"key": "", "tag": "banks", "values": [""]},
                   {"key": "", "tag": "locations", "values": ["", "", ...]},
-                  {"key": "", "tag": "accounting_period", "values": ["", "", ...]},
                 ]
     }
 
@@ -66,7 +65,6 @@ def load_from_json(filename, dataframe):
         - n_employee
         - banks
         - locations
-        - accounting_period
     """
     # load json file using json.load()
     with open(filename) as f:
@@ -86,7 +84,6 @@ def load_from_json(filename, dataframe):
     n_employee = dataset["variables"][7]["values"][0]
     banks = dataset["variables"][8]["values"][0]
     locations = dataset["variables"][9]["values"]
-    accounting_period = dataset["variables"][10]["values"]
 
     # append to dataframe
     df = dataframe.append({"title": title, "company_type": company_type,

@@ -43,7 +43,7 @@ class JapaneseDataset:
                                      "accounting_period", "dividend",
                                      "personnel", "main_shareholders",
                                      "n_employee", "banks",
-                                     "locations", "accounting_period"])
+                                     "locations"])
 
         self.networks = {}
         self.knowledge_graphs = {}
