@@ -89,7 +89,8 @@ class JapaneseDataset:
         assert os.path.isdir(foldername), "The foldername is not a directory."
 
         for filename in os.listdir(foldername):
-            self.read_dataset_from_file(filename)
+            full_filename = os.path.join(foldername, filename)
+            self.read_dataset_from_file(full_filename)
 
 
     def create_network(self, network_type: str) -> None:
