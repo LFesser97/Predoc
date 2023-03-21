@@ -71,9 +71,9 @@ def load_from_json(filename, dataframe):
         dataset = json.load(f)
 
     # only have one company per file
-    company_information = {"title" : dataset["title"],
-                            "company_type" : dataset["compnay_type"],
-                            "address" : dataset["address"]}
+    company_information = {"title": dataset["title"],
+                           "company_type": dataset["compnay_type"],
+                           "address": dataset["address"]}
 
     # get list of available variables
     available_variables = [dataset["variables"][i]["tag"] for i in range(len(dataset["variables"]))]
@@ -83,6 +83,6 @@ def load_from_json(filename, dataframe):
         company_information[variable] = dataset["variables"][available_variables.index(variable)]["values"]
 
     # append to dataframe
-    df = dataframe.append(company_information, ignore_index=True)
+    df = dataframe.concat(company_information, ignore_index=True)
 
     return df
