@@ -83,6 +83,5 @@ def load_from_json(filename, dataframe):
         company_information[variable] = dataset["variables"][available_variables.index(variable)]["values"]
 
     # append to dataframe
-    df = dataframe.concat(company_information, ignore_index=True)
-
+    df = pd.concat([dataframe, pd.DataFrame(company_information, index=[0])], ignore_index=True)
     return df
