@@ -12,6 +12,7 @@ This file contains all functions for loading Japanese datasets.
 
 import pandas as pd
 import numpy as np
+import json
 
 
 # functions for loading in datasets and storing them in a pandas dataframe
@@ -67,8 +68,9 @@ def load_from_json(filename, dataframe):
         - locations
         - accounting_period
     """
-    # load json file
-    dataset = pd.read_json(filename)
+    # load json file using json.load()
+    with open(filename) as f:
+        dataset = json.load(f)
 
     # iterate over all companies
     for i in range(len(dataset)):
@@ -118,6 +120,14 @@ def load_from_json(filename, dataframe):
         accounting_period = company["variables"][10]["values"]
 
         # append to dataframe
-        df = dataframe.append({"title": title, "company_type": company_type, "address": address, "est_date": est_date, "n_stocks_authorized": n_stocks_authorized, "stock_capital": stock_capital, "accounting_period": accounting_period, "dividend": dividend, "personnel": personnel, "main_shareholders": main_shareholders, "n_employee": n_employee, "banks": banks, "locations": locations, "accounting_period": accounting_period}, ignore_index=True)
+        df = dataframe.append({"title": title, "company_type": company_type,
+                               "address": address, "est_date": est_date,
+                               "n_stocks_authorized": n_stocks_authorized,
+                               "stock_capital": stock_capital, "accounting_period":
+                               accounting_period, "dividend": dividend,
+                               "personnel": personnel, "main_shareholders": main_shareholders,
+                               "n_employee": n_employee, "banks": banks,
+                               "locations": locations, "accounting_period": accounting_period},
+                               ignore_index=True)
 
     return df
