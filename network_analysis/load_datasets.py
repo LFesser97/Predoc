@@ -45,7 +45,7 @@ def load_from_json(filename, dataframe):
     }
 
     dataframe : pandas dataframe
-        The dataframe to which the dataset should be appended.
+        The dataframe to which the company should be appended.
 
     Returns
     -------
@@ -72,62 +72,31 @@ def load_from_json(filename, dataframe):
     with open(filename) as f:
         dataset = json.load(f)
 
-    # iterate over all companies
-    for i in range(len(dataset)):
-        # get company
-        company = dataset[i]
+    # only have one company per file
+    title = dataset["title"]
+    company_type = dataset["company_type"]
+    address = dataset["address"]
+    est_date = dataset["variables"][0]["values"][0]
+    n_stocks_authorized = dataset["variables"][1]["values"][0]
+    stock_capital = dataset["variables"][2]["values"][0]
+    accounting_period = dataset["variables"][3]["values"][0]
+    dividend = dataset["variables"][4]["values"]
+    personnel = dataset["variables"][5]["values"]
+    main_shareholders = dataset["variables"][6]["values"]
+    n_employee = dataset["variables"][7]["values"][0]
+    banks = dataset["variables"][8]["values"][0]
+    locations = dataset["variables"][9]["values"]
+    accounting_period = dataset["variables"][10]["values"]
 
-        # get title
-        title = company["title"]
-
-        # get company_type
-        company_type = company["company_type"]
-
-        # get address
-        address = company["address"]
-
-        # get est_date
-        est_date = company["variables"][0]["values"][0]
-
-        # get n_stocks_authorized
-        n_stocks_authorized = company["variables"][1]["values"][0]
-
-        # get stock_capital
-        stock_capital = company["variables"][2]["values"][0]
-
-        # get accounting_period
-        accounting_period = company["variables"][3]["values"][0]
-
-        # get dividend
-        dividend = company["variables"][4]["values"]
-
-        # get personnel
-        personnel = company["variables"][5]["values"]
-
-        # get main_shareholders
-        main_shareholders = company["variables"][6]["values"]
-
-        # get n_employee
-        n_employee = company["variables"][7]["values"][0]
-
-        # get banks
-        banks = company["variables"][8]["values"][0]
-
-        # get locations
-        locations = company["variables"][9]["values"]
-
-        # get accounting_period
-        accounting_period = company["variables"][10]["values"]
-
-        # append to dataframe
-        df = dataframe.append({"title": title, "company_type": company_type,
-                               "address": address, "est_date": est_date,
-                               "n_stocks_authorized": n_stocks_authorized,
-                               "stock_capital": stock_capital, "accounting_period":
-                               accounting_period, "dividend": dividend,
-                               "personnel": personnel, "main_shareholders": main_shareholders,
-                               "n_employee": n_employee, "banks": banks,
-                               "locations": locations, "accounting_period": accounting_period},
-                               ignore_index=True)
+    # append to dataframe
+    df = dataframe.append({"title": title, "dataset_type": company_type,
+                           "address": address, "est_date": est_date,
+                           "n_stocks_authorized": n_stocks_authorized,
+                           "stock_capital": stock_capital, "accounting_period": accounting_period,
+                           "dividend": dividend, "personnel": personnel,
+                           "main_shareholders": main_shareholders, "n_employee": n_employee,
+                           "banks": banks, "locations": locations,
+                           "accounting_period": accounting_period},
+                           ignore_index=True)
 
     return df
