@@ -55,8 +55,8 @@ def load_supplier_from_csv(filename, dataframe):
     # to the supplier column for each 'target'. If the 'target' is not in the dataframe, it is added.
     for index, row in df_list.iterrows():
         if row['target'] in dataframe.index:
-            dataframe.at[row['target'], 'Suppliers'] = dataframe.at[row['target'], 'Suppliers'] + [row['source']]
+            dataframe.at[row['target'], 'suppliers'] = dataframe.at[row['target'], 'suppliers'] + [row['source']]
         else:
-            dataframe = dataframe.append({'Name': row['target'], 'Suppliers': [row['source']]}, ignore_index=True)
+            dataframe = dataframe.append({'title': row['target'], 'suppliers': [row['source']]}, ignore_index=True)
 
     return dataframe
