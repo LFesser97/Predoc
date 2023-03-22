@@ -35,8 +35,8 @@ def create_supplier_network(dataset: pd.DataFrame) -> nx.Graph:
 
     try:
         for index, row in dataset.iterrows():
-            for supplier in row["Suppliers"]:
-                network.add_edge(supplier, row["Name"])
+            for supplier in row["suppliers"]:
+                network.add_edge(supplier, row["title"])
 
         # append the type of the nodes to the network
         for node in network.nodes():
@@ -67,11 +67,11 @@ def create_shareholder_network(dataset: pd.DataFrame) -> nx.Graph:
     try:
         for index, row in dataset.iterrows():
             for shareholder in row["main_shareholders"]:
-                network.add_edge(shareholder, row["Name"])
+                network.add_edge(shareholder, row["title"])
 
         # append the type of the nodes to the network
         for node in network.nodes():
-            if node in dataset["Name"].values:
+            if node in dataset["title"].values:
                 network.nodes[node]["type"] = "company"
             else:
                 network.nodes[node]["type"] = "Bank/ Individual"

@@ -32,7 +32,7 @@ def load_supplier_from_csv(filename, dataframe):
 
     Returns
     -------
-    updated_dataset : pandas dataframe
+    df_list : pandas dataframe
         The updated dataset as a pandas dataframe.
     """
     # get the source -> target pairs
@@ -41,22 +41,19 @@ def load_supplier_from_csv(filename, dataframe):
     df.replace(-9, np.nan, inplace=True)
     df_list = df.dropna()
 
-    df_list['source'] = df.apply(
+    df_list['supplier'] = df.apply(
         lambda x: x['partner_main_title'] if x['partner_type'] == 'fanmai' else x['matched_tk_text'],
         axis=1)
 
-    df_list['target'] = df.apply(
+    df_list['title'] = df.apply(
         lambda x: x['matched_tk_text'] if x['partner_type'] == 'fanmai' else x['partner_main_title'],
         axis=1)
 
-    df_list = df_list[['source', 'target']]
+    df_list = df_list[['supplier', 'title']]
 
-    # append the source -> target pairs to the dataframe by adding 'source'
-    # to the supplier column for each 'target'. If the 'target' is not in the dataframe, it is added.
-    for index, row in df_list.iterrows():
-        if row['target'] in dataframe.index:
-            dataframe.at[row['target'], 'suppliers'] = dataframe.at[row['target'], 'suppliers'] + [row['source']]
-        else:
-            dataframe = dataframe.append({'title': row['target'], 'suppliers': [row['source']]}, ignore_index=True)
+    # add all other columns in dataframe not in df_list to df_list
+    for column in dataframe.columns:
+        if column not in df_list.columns:
+            df_list[column] = np.nan
 
-    return dataframe
+    return df_list
