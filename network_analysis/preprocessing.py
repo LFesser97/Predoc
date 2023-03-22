@@ -49,7 +49,7 @@ def load_supplier_from_csv(filename, dataframe):
         lambda x: x['matched_tk_text'] if x['partner_type'] == 'fanmai' else x['partner_main_title'],
         axis=1)
 
-    df_list = df_list[['source','target']]
+    df_list = df_list[['source', 'target']]
 
     # append the source -> target pairs to the dataframe by adding 'source'
     # to the supplier column for each 'target'. If the 'target' is not in the dataframe, it is added.
