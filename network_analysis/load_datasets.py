@@ -15,6 +15,11 @@ import numpy as np
 import json
 
 
+# import other files from this project
+
+import preprocessing as pp
+
+
 # functions for loading in datasets and storing them in a pandas dataframe
 
 def load_from_json(filename, dataframe):
@@ -86,3 +91,57 @@ def load_from_json(filename, dataframe):
     df = dataframe.append(company_information, ignore_index=True)
 
     return df
+
+
+def load_from_csv(filename, dataframe, preprocessed, variables):
+    """
+    This function loads a Japanese dataset from a .csv file.
+
+    Parameters
+    ----------
+    filename : str
+        The filename of the Japanese dataset.
+
+    dataframe : pandas dataframe
+        The dataframe to which the new dataset should be appended.
+
+    preprocessed : bool
+        Whether the dataset is already in the correct format,
+        i.e. contains only variables in the dataframe.
+
+    variables : list
+        The variables that should be loaded from the dataset.
+
+    Returns
+    -------
+    dataframe : pandas dataframe
+        The updated internal dataset as a pandas dataframe.
+    """
+    # check what columns are in the internal dataframe
+    columns = list(dataframe.columns)
+
+    if preprocessed:
+        # load csv file using pandas
+        df = pd.read_csv(filename)
+
+        # only keep the variables that are columns in the internal dataframe
+        df = df[columns]
+
+        # concatenate the company information to the dataframe
+        dataframe = dataframe.append(df, ignore_index=True)
+
+    else:
+        # initialize an empty dataframe with the columns in the internal dataframe
+        df = pd.DataFrame(columns=columns)
+
+        for variable in variables:
+            if variable == "supplier":
+                df = pp.load_supplier_from_csv(filename, df)
+
+            else:
+                raise ValueError("Variable not recognized:", variable)
+
+        # concatenate the company information to the dataframe
+        dataframe = dataframe.append(df, ignore_index=True)
+
+    return dataframe

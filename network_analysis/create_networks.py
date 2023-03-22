@@ -66,7 +66,7 @@ def create_shareholder_network(dataset: pd.DataFrame) -> nx.Graph:
 
     try:
         for index, row in dataset.iterrows():
-            for shareholder in row["Shareholders"]:
+            for shareholder in row["main_shareholders"]:
                 network.add_edge(shareholder, row["Name"])
 
         # append the type of the nodes to the network

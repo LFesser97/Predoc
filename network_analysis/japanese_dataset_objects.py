@@ -43,13 +43,13 @@ class JapaneseDataset:
                                      "accounting_period", "dividend",
                                      "personnel", "main_shareholders",
                                      "n_employee", "banks",
-                                     "locations"])
+                                     "locations", "suppliers"])
 
         self.networks = {}
         self.knowledge_graphs = {}
 
 
-    def read_dataset_from_file(self, filename):
+    def read_dataset_from_file(self, filename, preprocessed=True, variables=[]):
         """
         This method reads a Japanese dataset from a file.
 
@@ -57,6 +57,14 @@ class JapaneseDataset:
         ----------
         filename : str
             The filename of the Japanese dataset.
+
+        preprocessed : bool, optional
+            Whether the dataset is already in the correct format, i.e. contains only variables
+            that are in the dataset attribute. The default is True.
+
+        variables : list, optional
+            The variables that should be extracted from the dataset.
+            Only used if preprocessed is False. The default is [].
 
         Returns
         -------
@@ -66,7 +74,7 @@ class JapaneseDataset:
         assert filename.split(".")[-1] in self.dataset_types, "Unknown file extension."
 
         if filename.split(".")[-1] == "csv":
-            raise NotImplementedError
+            self.dataset = ld.load_from_csv(filename, self.dataset, preprocessed, variables)
 
         elif filename.split(".")[-1] == "json":
             self.dataset = ld.load_from_json(filename, self.dataset)
