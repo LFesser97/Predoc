@@ -37,7 +37,7 @@ def load_supplier_from_csv(filename, dataframe):
     """
     # get the source -> target pairs
     df = pd.read_csv(filename)
-    df = df['partner_main_title', 'partner_type', 'matched_tk_text']
+    df = df[['partner_main_title', 'partner_type', 'matched_tk_text']]
     df.replace(-9, np.nan, inplace=True)
     df_list = df.dropna()
 
