@@ -91,16 +91,19 @@ def compare_motif_frequency(network: nx.Graph, motifs: dict, num_baselines: int=
     # Generate num_baselines baseline graphs using the configuration model
     baseline_graphs = [nx.configuration_model([d for n, d in network.degree()]) for i in range(num_baselines)]
 
+    # convert the motifs to multigraphs
+    multi_motifs = {motif: nx.MultiGraph(motif) for motif in motifs.values()}
+
     # Count the motifs in the baseline graphs
-    baseline_motif_counts = [count_motifs(baseline_graph, motifs) for baseline_graph in baseline_graphs]
+    baseline_motif_counts = [count_motifs(baseline_graph, multi_motifs) for baseline_graph in baseline_graphs]
 
     # for each motif in motifs, we calculate the mean and standard deviation in the baseline graphs
     baseline_motif_means = {motif: np.mean([baseline_motif_counts[i][motif]
                                             for i in range(num_baselines)]) for motif in motifs.keys()}
-    
+
     baseline_motif_stds = {motif: np.std([baseline_motif_counts[i][motif]
                                           for i in range(num_baselines)]) for motif in motifs.keys()}
-    
+
     # Count the motifs in the network
     try:
         network_motif_counts = network.graph["motif_counts"]
