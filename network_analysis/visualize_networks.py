@@ -65,3 +65,29 @@ def visualize_shareholder_network(network: nx.Graph) -> None:
     labels = nx.get_edge_attributes(network, 'weight')
     nx.draw_networkx_edge_labels(network, pos, edge_labels=labels, label_pos=0.3, font_size=8)
     plt.show()
+
+
+# functions for visualizing network statistics
+
+def plot_significance_profile(significance_profile: dict) -> None:
+    """
+    This function plots a significance profile.
+
+    Parameters
+    ----------
+    significance_profile : dict
+        The significance profile.
+
+    Returns
+    -------
+    None.
+    """
+    # normalize the significance profile
+    significance_profile = {key: value / sum(significance_profile.values()) for key, value in significance_profile.items()}
+
+    # plot the significance profile as a line plot with the x-axis being the motif and the y-axis being the significance
+    plt.plot(list(significance_profile.keys()), list(significance_profile.values()))
+    plt.xlabel("Motif")
+    plt.ylabel("Normalized Z-Score")
+    plt.title("NetworkSignificance Profile")
+    plt.show()

@@ -111,26 +111,3 @@ def compare_motif_frequency(network: nx.Graph, motifs: dict, num_baselines: int=
                         for motif in motifs.keys()}
     
     return motif_comparison
-
-
-def plot_significance_profile(network: nx.Graph, motifs: dict) -> None:
-    """
-    This function plots the significance profile of a network.
-
-    Parameters
-    ----------
-    network : nx.Graph
-        The graph.
-
-    motifs : dict
-        The motifs.
-
-    num_baselines : int, optional
-        The number of baseline graphs to be generated. The default is 100.
-
-    Returns
-    -------
-    None.
-
-    """
-    pass
