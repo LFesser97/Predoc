@@ -83,11 +83,11 @@ def compare_motif_frequency(network: nx.Graph, motifs: dict, num_baselines: int=
     motif_comparison : dict
         The motif comparison.
     """
-    # Generate the baseline graphs from an Erdos-Renyi random graph with the same number of nodes and edges
-    baseline_graphs = [nx.erdos_renyi_graph(
-        network.number_of_nodes(), network.number_of_edges() / (network.number_of_nodes() * (network.number_of_nodes() - 1)))
-        for i in range(num_baselines)]
-
+    # Generate the baseline graphs from a directed Erdos-Renyi random graph with the same number of nodes
+    baseline_graphs = [nx.erdos_renyi_graph(network.number_of_nodes(),
+                                            network.number_of_edges() / (network.number_of_nodes() * (network.number_of_nodes() - 1)),
+                                            directed=True) for i in range(num_baselines)]
+    
     # Count the motifs in the baseline graphs
     baseline_motif_counts = [count_motifs(baseline_graphs[i], motifs) for i in range(num_baselines)]
 
