@@ -83,6 +83,12 @@ def compare_motif_frequency(network: nx.Graph, motifs: dict, num_baselines: int=
     motif_comparison : dict
         The motif comparison.
     """
+    # check if the degrees in the network sum up to an even number
+    if sum(network.degree().values()) % 2 != 0:
+
+        # if not, we add a random node to the network
+        network.add_node("random_node")
+
     # Generate num_baselines baseline graphs using the configuration model
     baseline_graphs = [nx.configuration_model(network.degree()) for i in range(num_baselines)]
 
