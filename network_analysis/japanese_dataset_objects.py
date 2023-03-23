@@ -19,6 +19,7 @@ import os
 
 import create_networks as cn
 import visualize_networks as vn
+import network_methods as nm
 
 import create_knowledge_graphs as kg
 import visualize_knowledge_graphs as vkg
@@ -48,6 +49,10 @@ class JapaneseDataset:
         self.networks = {}
         self.knowledge_graphs = {}
 
+        self.known_network_motifs = {}
+
+
+    # methods for reading in datasets
 
     def read_dataset_from_file(self, filename, preprocessed=True, variables=[]):
         """
@@ -101,6 +106,8 @@ class JapaneseDataset:
             self.read_dataset_from_file(full_filename)
 
 
+    # methods for homogeneous networks
+
     def create_network(self, network_type: str) -> None:
         """
         This method creates a specific network
@@ -127,7 +134,61 @@ class JapaneseDataset:
         self.networks[network_type] = network
 
 
-    def write_network_to_gml(self, network_type, filename):
+    def mine_motifs_from_network(self, network_type: str, motifs: dict) -> None:
+        """
+        This method mines motifs from a network.
+
+        Parameters
+        ----------
+        network_name : str
+            The name of the network.
+
+        motifs : dict
+            The motifs that should be mined.
+
+        Returns
+        -------
+        None.
+            The motifs are appended to the network.
+        """
+        assert network_type in self.network_types, "Unknown network type."
+        assert network_type in self.networks, "The network has not been created yet."
+
+        # append the motifs to the known motifs dictionary
+        self.known_network_motifs.update(motifs)
+
+        self.networks[network_type].graph.update(
+            {"motif_counts": nm.count_motifs(self.networks[network_type], motifs)})
+
+
+    def create_significance_profile(self, network_type: str, motifs: dict = {}) -> None:
+        """
+        This method creates a significance profile for a network.
+
+        Parameters
+        ----------
+        network_name : str
+            The name of the network.
+
+        motifs : dict, optional
+            The motifs that should be compared. The default is {}.
+
+        Returns
+        -------
+        None.
+            The significance profile is appended to the network.
+        """
+        assert network_type in self.network_types, "Unknown network type."
+        assert network_type in self.networks, "The network has not been created yet."
+
+        if motifs == {}:
+            motifs = self.known_network_motifs
+
+        self.networks[network_type].graph.update(
+            {"significance_profile": nm.compare_motif_frequency(self.networks[network_type], motifs)})
+
+
+    def write_network_to_gml(self, network_type: str, filename: str) -> None:
         """
         This method writes a network to a gml file.
 
@@ -170,6 +231,8 @@ class JapaneseDataset:
             assert network_type in self.networks, "The shareholder network has not been created yet."
             vn.visualize_shareholder_network(self.networks[network_type])
 
+
+    # methods for knowledge graphs
 
     def visualize_knowledge_graph(self, knowledge_graph: str) -> None:
         """
