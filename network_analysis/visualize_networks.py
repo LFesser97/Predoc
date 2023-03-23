@@ -86,8 +86,11 @@ def plot_significance_profile(significance_profile: dict) -> None:
     significance_profile = {key: value / sum(significance_profile.values()) for key, value in significance_profile.items()}
 
     # plot the significance profile as a line plot with the x-axis being the motif and the y-axis being the significance
-    plt.plot(list(significance_profile.keys()), list(significance_profile.values()))
+    # fix the x-axis at zero and plot the y-axis from -1 to 1
+    plt.plot(list(significance_profile.keys()), list(significance_profile.values()), marker="o")
+    plt.axhline(y=0, color="black", linestyle="--")
+    plt.ylim(-1, 1)
     plt.xlabel("Motif")
     plt.ylabel("Normalized Z-Score")
-    plt.title("NetworkSignificance Profile")
+    plt.title("Network Significance Profile")
     plt.show()
