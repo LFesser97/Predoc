@@ -186,6 +186,27 @@ class JapaneseDataset:
 
         self.networks[network_type].graph.update(
             {"significance_profile": nm.compare_motif_frequency(self.networks[network_type], motifs)})
+        
+
+    def plot_significance_profile(self, network_type: str) -> None:
+        """
+        This method plots the significance profile of a network.
+
+        Parameters
+        ----------
+        network_name : str
+            The name of the network.
+
+        Returns
+        -------
+        None.
+            Plots the significance profile.
+        """
+        assert network_type in self.network_types, "Unknown network type."
+        assert network_type in self.networks, "The network has not been created yet."
+        assert "significance_profile" in self.networks[network_type].graph, "The significance profile has not been created yet."
+
+        vn.plot_significance_profile(self.networks[network_type].graph["significance_profile"])
 
 
     def write_network_to_gml(self, network_type: str, filename: str) -> None:
