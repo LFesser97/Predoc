@@ -83,19 +83,13 @@ def compare_motif_frequency(network: nx.Graph, motifs: dict, num_baselines: int=
     motif_comparison : dict
         The motif comparison.
     """
-    # check if the degrees in the network sum up to an even number
-    # if not, we add a random node to the network
-    if sum([d for n, d in network.degree()]) % 2 != 0:
-        network.add_node("random_node")
-
-    # Generate num_baselines baseline graphs using the configuration model
-    baseline_graphs = [nx.configuration_model([d for n, d in network.degree()]) for i in range(num_baselines)]
-
-    # convert the motifs to multigraphs
-    multi_motifs = {motif: nx.MultiGraph(motif) for motif in motifs.values()}
+    # Generate the baseline graphs from an Erdos-Renyi random graph with the same number of nodes and edges
+    baseline_graphs = [nx.erdos_renyi_graph(
+        network.number_of_nodes(), network.number_of_edges() / (network.number_of_nodes() * (network.number_of_nodes() - 1)))
+        for i in range(num_baselines)]
 
     # Count the motifs in the baseline graphs
-    baseline_motif_counts = [count_motifs(baseline_graph, multi_motifs) for baseline_graph in baseline_graphs]
+    baseline_motif_counts = [count_motifs(baseline_graphs[i], motifs) for i in range(num_baselines)]
 
     # for each motif in motifs, we calculate the mean and standard deviation in the baseline graphs
     baseline_motif_means = {motif: np.mean([baseline_motif_counts[i][motif]
