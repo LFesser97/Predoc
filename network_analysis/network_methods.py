@@ -55,7 +55,7 @@ def count_motifs(graph: nx.Graph, motifs: dict) -> dict:
     for trip in u_triplets:
         sub_gr = graph.subgraph(trip)
         mot_match = list(map(lambda mot_id: nx.is_isomorphic(sub_gr, motifs[mot_id]), motifs.keys()))
-        match_keys = [motifs.keys()[i] for i in range(len(motifs)) if mot_match[i]]
+        match_keys = [list(motifs.keys())[i] for i in range(len(motifs)) if mot_match[i]]
         if len(match_keys) == 1:
             mcount[match_keys[0]] += 1
 
