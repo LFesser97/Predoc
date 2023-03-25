@@ -39,9 +39,9 @@ def count_motifs(graph: nx.Graph, motifs: dict) -> dict:
     mcount = dict(zip(motifs.keys(), list(map(int, np.zeros(len(motifs))))))
     nodes = graph.nodes()
 
-    #We use iterools.product to have all combinations of three nodes in the
-    #original graph. Then we filter combinations with non-unique nodes, because
-    #the motifs do not account for self-consumption.
+    # We use iterools.product to have all combinations of three nodes in the
+    # original graph. Then we filter combinations with non-unique nodes, because
+    # the motifs do not account for self-consumption.
 
     triplets = list(itertools.product(*[nodes, nodes, nodes]))
     triplets = [trip for trip in triplets if len(list(set(trip))) == 3]
@@ -49,8 +49,8 @@ def count_motifs(graph: nx.Graph, motifs: dict) -> dict:
     u_triplets = []
     [u_triplets.append(trip) for trip in triplets if not u_triplets.count(trip)]
 
-    #The for each each of the triplets, we (i) take its subgraph, and compare
-    #it to all fo the possible motifs
+    # The for each each of the triplets, we (i) take its subgraph, and compare
+    # it to all fo the possible motifs
 
     for trip in u_triplets:
         sub_gr = graph.subgraph(trip)
@@ -87,7 +87,7 @@ def compare_motif_frequency(network: nx.Graph, motifs: dict, num_baselines: int=
     baseline_graphs = [nx.erdos_renyi_graph(network.number_of_nodes(),
                                             network.number_of_edges() / (network.number_of_nodes() * (network.number_of_nodes() - 1)),
                                             directed=True) for i in range(num_baselines)]
-    
+
     # Count the motifs in the baseline graphs
     baseline_motif_counts = [count_motifs(baseline_graphs[i], motifs) for i in range(num_baselines)]
 
@@ -109,5 +109,5 @@ def compare_motif_frequency(network: nx.Graph, motifs: dict, num_baselines: int=
     # Calculate the z-scores for each motif
     motif_comparison = {motif: (network_motif_counts[motif] - baseline_motif_means[motif]) / baseline_motif_stds[motif]
                         for motif in motifs.keys()}
-    
+
     return motif_comparison
