@@ -28,6 +28,13 @@ if __name__ == '__main__':
     configure("tensorboard/run"+time, flush_secs=5)
 
     graphs = create_graphs.create(args)
+
+    # check if gpu support is available
+
+    if torch.cuda.is_available():
+        torch.set_default_tensor_type(torch.cuda.FloatTensor)
+
+    device = torch.device("cuda")
     
     # split datasets
     random.seed(123)
