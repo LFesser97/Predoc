@@ -16,26 +16,22 @@ import torch, torchvision
 
 # compute the H-divergence between the labeled data and the unlabeled data
 
-def compute_H_divergence(labeled, unlabeled, model):
+def compute_H_divergence(labeled: np.ndarray, unlabeled: np.ndarray,
+                         model: torch.nn.Sequential) -> float:
     """
     A function that computes the H-divergence between the labeled and unlabeled data.
 
     Parameters
     ----------
-    labeled : numpy array
-        The labeled data.
+    labeled: The labeled data.
 
-    unlabeled : numpy array
-        The unlabeled data.
+    unlabeled: The unlabeled data.
 
-    model : torch model
-        The discriminative model.
+    model: The discriminative model.
 
     Returns
     -------
-    H_divergence : float
-        The H-divergence between the labeled and unlabeled data.
-        Must be between 0 and 1.
+    H_divergence: The H-divergence between the labeled and unlabeled data.
     """
     # for each element in the labeled data, compute the probabilities of the classes
     p_L = model.predict(labeled)
@@ -59,25 +55,22 @@ def compute_H_divergence(labeled, unlabeled, model):
 
 # train a discriminative model on the labeled data and unlabeled data
 
-def train_discriminative_model(labeled, unlabeled, input_shape):
+def train_discriminative_model(labeled: np.ndarray, unlabeled: np.ndarray,
+                               input_shape: int) -> torch.nn.Sequential:
     """
     A function that trains and returns a discriminative model on the labeled and unlabeled data.
 
     Parameters
     ----------
-    labeled : numpy.ndarray
-        The labeled data.
+    labeled: The labeled data.
 
-    unlabeled : numpy.ndarray
-        The unlabeled data.
+    unlabeled: The unlabeled data.
 
-    input_shape : int
-        The number of features in the dataset.
+    input_shape: The number of features in the dataset.
 
     Returns
     -------
-    model : tf.keras.Sequential
-        The trained discriminative model.
+    model: The trained discriminative model.
     """
 
     # create the binary dataset:
@@ -110,19 +103,17 @@ def train_discriminative_model(labeled, unlabeled, input_shape):
 
 # we use a 3-layer MLP as the discriminative model
 
-def get_discriminative_model(input_shape):
+def get_discriminative_model(input_shape: int) -> torch.nn.Sequential:
     """
     The MLP model for discriminative active learning, without any regularization techniques.
 
     Parameters
     ----------
-    input_shape : int
-        The number of features in the dataset.
+    input_shape: The number of features in the dataset.
 
     Returns
     -------
-    model : tf.keras.Sequential
-        The MLP model.
+    model: The MLP model.
     """
     width = input_shape
     model = torch.nn.Sequential(
@@ -135,3 +126,26 @@ def get_discriminative_model(input_shape):
     )
 
     return model
+
+
+# get the latent representation of the data using the trained model
+
+def get_latent_representation(model: torch.nn.Sequential, X: np.ndarray) -> np.ndarray:
+    """
+    A function that computes the latent representation of the data using the trained model.
+
+    Parameters
+    ----------
+    model: The trained model.
+
+    X: The data.
+
+    Returns
+    -------
+    latent_representation: The latent representation of the data.
+    """
+    X = torch.from_numpy(X).float()
+    latent_representation = model(X)
+    latent_representation = latent_representation.detach().numpy()
+
+    return latent_representation
