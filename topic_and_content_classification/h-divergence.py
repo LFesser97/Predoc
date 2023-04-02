@@ -28,7 +28,7 @@ def compute_H_divergence(labeled, unlabeled, model):
     unlabeled : numpy array
         The unlabeled data.
 
-    model : tensorflow model
+    model : torch model
         The discriminative model.
 
     Returns
