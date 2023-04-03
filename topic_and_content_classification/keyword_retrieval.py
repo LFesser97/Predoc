@@ -12,10 +12,11 @@ This file contains all methods for keyword-based text retrieval.
 
 import numpy as np
 import os
+import pandas as pd
 
 # functions for keyword-based text retrieval
 
-def keyword_retrieval(keywords: list, corpus_folder: str) -> list:
+def keyword_retrieval(keywords: list, corpus: pd.core.series.Series) -> list:
     """
     A function that retrieves documents based on keywords.
 
@@ -23,23 +24,17 @@ def keyword_retrieval(keywords: list, corpus_folder: str) -> list:
     ----------
     keywords : The keywords to retrieve documents for.
 
-    corpus_folder : The folder containing the corpus.
+    corpus : The dataframe containing the texts.
 
     Returns
     -------
-    documents : The documents retrieved based on the keywords.
+    documents : The indices of the documents retrieved based on the keywords.
     """
-    # create a list of all files in the corpus folder
-    files = os.listdir(corpus_folder)
-
-    # for each file, check whether it contains at least one of the keywords
     documents = []
-    for file in files:
-        with open(corpus_folder + file, "r") as f:
-            text = f.read()
-            for keyword in keywords:
-                if keyword in text:
-                    documents.append(file)
-                    break
+
+    # for each element in the corpus, check if at least one keyword is in the text
+    for i, text in enumerate(corpus):
+        if any([keyword in text for keyword in keywords]):
+            documents.append(i)
 
     return documents
