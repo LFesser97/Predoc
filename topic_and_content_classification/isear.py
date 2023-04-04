@@ -54,3 +54,51 @@ def get_isear_positives(dataset: pd.core.frame.DataFrame, emotion: int) -> list:
     positives = dataset[dataset['EMOT'] == emotion].index.tolist()
 
     return positives
+
+
+def load_isear_texts(isear: pd.core.frame.DataFrame, int_low: int, int_high: int) -> list:
+    """
+    Load the texts of the ISEAR dataset.
+
+    Parameters
+    ----------
+    isear : The ISEAR dataset.
+
+    int_low : The lower bound of the interval of texts to load.
+
+    int_high : The upper bound of the interval of texts to load.
+
+    Returns
+    -------
+    texts : The texts of the ISEAR dataset.
+    """
+
+    # get the texts of the ISEAR dataset
+    texts = [isear['SIT'][i] for i in range(int_low, int_high)]
+
+    return texts
+
+
+def load_binary_isear_labels(isear: pd.core.frame.DataFrame, int_low: int, int_high: int, emot: int) -> list:
+    """
+    Load the labels of the ISEAR dataset with binary labels,
+    i.e. 0 if the emotion is not the given emotion and 1 if the emotion is the given emotion.
+
+    Parameters
+    ----------
+    isear : The ISEAR dataset.
+
+    int_low : The lower bound of the interval of labels to load.
+
+    int_high : The upper bound of the interval of labels to load.
+
+    emot : The emotion to get the labels for.
+
+    Returns
+    -------
+    labels : The labels of the ISEAR dataset.
+    """
+    # get the labels of the ISEAR dataset
+    labels = [1 if isear['EMOT'][i] == emot else 0 for i in range(int_low, int_high)]
+    
+    return labels

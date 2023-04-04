@@ -10,147 +10,325 @@ This file contains all methods for neural text retrieval.
 
 # import packages
 
+import pandas as pd
 import numpy as np
-import torch, torchvision
+import os
+import torch
+import random
+
+from transformers import BertTokenizer
+from transformers import BertForSequenceClassification, AdamW, BertConfig
+from transformers import get_linear_schedule_with_warmup
+
+from torch.utils.data import TensorDataset, random_split
+from torch.utils.data import DataLoader, RandomSampler, SequentialSampler
+
 
 # import functions form other files in this project
+
+import isear as isear
 
 
 # functions for creating and training a neural retrieval model
 
-def create_model(model_type: str) -> torch.nn.Module:
+def tokenize_dataset(corpus: list, tokenizer: str) -> tuple:
     """
-    Create a neural retrieval model.
+    Tokenize a dataset and return the input ids and attention masks.
 
     Parameters
     ----------
-    model_type : The type of model to create.
+    corpus : The corpus to tokenize. One text per element.
+
+    tokenizer : The tokenizer to use.
 
     Returns
     -------
-    model : The created model.
-    """
-    assert model_type in ["bert", "MLP"], "The model type must be either 'bert' or 'MLP'."
+    input_ids : The input ids for the given corpus.
 
-    if model_type == "bert":
-        model = torch.hub.load('huggingface/pytorch-transformers', 'model', 'bert-base-uncased')
-    elif model_type == "MLP":
-        model = torch.nn.Sequential(
-            torch.nn.Linear(768, 128),
-            torch.nn.ReLU(),
-            torch.nn.Linear(128, 1)
+    attention_masks : The attention masks for the given corpus.
+    """
+    assert tokenizer in ['bert'], "The given tokenizer is not supported."
+
+    if tokenizer == 'bert':
+        # load the BERT tokenizer
+        tokenizer = BertTokenizer.from_pretrained('bert-base-cased', do_lower_case=True)
+
+        # tokenize all texts in the corpus
+        input_ids = []
+        attention_masks = []
+
+        for text in corpus:
+            encoded_dict = tokenizer.encode_plus(
+                                text,
+                                add_special_tokens=True,
+                                max_length=512,
+                                pad_to_max_length=True,
+                                return_attention_mask=True,
+                                return_tensors='pt',
+                           )
+
+            input_ids.append(encoded_dict['input_ids'])
+            attention_masks.append(encoded_dict['attention_mask'])
+
+        # convert the lists into tensors
+        input_ids = torch.cat(input_ids, dim=0)
+        attention_masks = torch.cat(attention_masks, dim=0)
+
+    return input_ids, attention_masks
+
+
+def create_dataset(input_ids: torch.Tensor, attention_masks: torch.Tensor, labels: torch.Tensor) -> TensorDataset:
+    """
+    Create a TensorDataset from the given input ids, attention masks, and labels.
+
+    Parameters
+    ----------
+    input_ids : The input ids for the given corpus.
+
+    attention_masks : The attention masks for the given corpus.
+
+    labels : The labels for the given corpus.
+
+    Returns
+    -------
+    dataset : The TensorDataset for the given corpus.
+    """
+    # combine the input ids and attention masks into a tensor dataset
+    dataset = TensorDataset(input_ids, attention_masks, labels)
+
+    return dataset
+
+
+def create_dataloaders(dataset: TensorDataset, batch_size: int) -> tuple:
+    """
+    Create dataloaders for the given dataset.
+
+    Parameters
+    ----------
+    dataset : The TensorDataset for the given corpus.
+
+    batch_size : The batch size to use.
+
+    Returns
+    -------
+    train_dataloader : The dataloader for the training set.
+
+    validation_dataloader : The dataloader for the validation set.
+    """
+    # calculate the number of samples to include in each set
+    train_size = int(0.9 * len(dataset))
+    validation_size = len(dataset) - train_size
+
+    # divide the dataset by randomly selecting samples
+    train_dataset, validation_dataset = random_split(dataset, [train_size, validation_size])
+
+    # create the dataloaders for the training and validation sets
+    train_dataloader = DataLoader(
+                train_dataset,
+                sampler=RandomSampler(train_dataset),
+                batch_size=batch_size
+            )
+
+    validation_dataloader = DataLoader(
+                validation_dataset,
+                sampler=SequentialSampler(validation_dataset),
+                batch_size=batch_size
+            )
+
+    return train_dataloader, validation_dataloader
+
+
+def create_model(model_name: str, num_labels: int) -> BertForSequenceClassification:
+    """
+    Create a model for the given model name and number of labels.
+
+    Parameters
+    ----------
+    model_name : The name of the model to create.
+
+    num_labels : The number of labels to use.
+
+    Returns
+    -------
+    model : The model for the given model name and number of labels.
+    """
+    assert model_name in ['bert'], "The given model name is not supported."
+
+    if model_name == 'bert':
+        # load the BERT model
+        model = BertForSequenceClassification.from_pretrained(
+            "bert-base-cased",
+            num_labels=num_labels,
+            output_attentions=False,
+            output_hidden_states=False,
         )
 
     return model
 
 
-def load_data(corpus_folder):
+def train_bert(model: BertForSequenceClassification, train_dataloader: DataLoader, validation_dataloader: DataLoader,
+                epochs: int, batch_size: int) -> BertForSequenceClassification:
     """
-    To be implemented. 
-    """
-    pass
-
-
-def train_model(model: torch.nn.Module, X_train: np.ndarray, Y_train: np.ndarray, 
-                X_val: np.ndarray, Y_val: np.ndarray, batch_size: int, 
-                n_epochs: int, learning_rate: float) -> torch.nn.Module:
-    """
-    Train a neural retrieval model.
+    Train a model.
 
     Parameters
     ----------
     model : The model to train.
 
-    X_train : The training data.
+    train_dataloader : The dataloader for the training set.
 
-    Y_train : The training labels.
+    validation_dataloader : The dataloader for the validation set.
 
-    X_val : The validation data.
-
-    Y_val : The validation labels.
+    epochs : The number of epochs to train the model for.
 
     batch_size : The batch size to use.
-
-    n_epochs : The number of epochs to train for.
-
-    learning_rate : The learning rate to use.
 
     Returns
     -------
     model : The trained model.
     """
-    # create a training dataset
-    train_dataset = torch.utils.data.TensorDataset(torch.tensor(X_train), torch.tensor(Y_train))
+    # get the device to train the model on
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # create a validation dataset
-    val_dataset = torch.utils.data.TensorDataset(torch.tensor(X_val), torch.tensor(Y_val))
+    # send the model to the device
+    model.to(device)
 
-    # create a training data loader
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size)
+    # get the total number of training steps
+    total_steps = len(train_dataloader) * epochs
 
-    # create a validation data loader
-    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size)
+    # create the optimizer
+    optimizer = AdamW(model.parameters(), lr=5e-5, eps=1e-8)
 
-    # create an optimizer
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    # create the learning rate scheduler
+    scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0, num_training_steps=total_steps)
 
-    # create a loss function
-    loss_function = torch.nn.BCEWithLogitsLoss()
+    # set the seed for reproducibility
+    seed_val = 66
+    random.seed(seed_val)
+    np.random.seed(seed_val)
+    torch.manual_seed(seed_val)
+    torch.cuda.manual_seed_all(seed_val)
 
-    # train the model
-    for epoch in range(n_epochs):
-        for X_batch, Y_batch in train_loader:
-            # compute the model output
-            Y_hat = model(X_batch)
+    loss_values = []
 
-            # compute the loss
-            loss = loss_function(Y_hat, Y_batch)
+    for epoch_i in range(0, epochs):
+        print("")
+        print('======== Epoch {:} / {:} ========'.format(epoch_i + 1, epochs))
+        print('Training...')
 
-            # compute the gradients
+        total_loss = 0
+        model.train()
+
+        for step, batch in enumerate(train_dataloader):
+
+            b_input_ids = batch[0].to(device)
+            b_input_mask = batch[1].to(device)
+            b_labels = batch[2].to(device)
+
+            model.zero_grad()
+
+            outputs = model(b_input_ids, token_type_ids=None, attention_mask=b_input_mask, labels=b_labels)
+
+            loss = outputs[0]
+            total_loss += loss.item()
+
             loss.backward()
 
-            # update the model parameters
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+
             optimizer.step()
+            scheduler.step()
 
-            # reset the gradients
-            optimizer.zero_grad()
+        avg_train_loss = total_loss / len(train_dataloader)
 
-        # evaluate the model on the validation set
-        Y_hat = model(X_val)
-        loss = loss_function(Y_hat, Y_val)
-        print("Epoch: {}, Validation loss: {}".format(epoch, loss))
+        print("")
+        print("  Average training loss: {0:.2f}".format(avg_train_loss))
+        print("Training complete!")
 
     return model
 
 
-def neural_retrieval(model: torch.nn.Module, corpus_folder: str) -> list:
+def flat_accuracy(preds: np.ndarray, labels: np.ndarray) -> float:
     """
-    Perform neural retrieval using a pretrained model.
+    Calculate the accuracy of the model.
 
     Parameters
     ----------
-    model : The pretrained model to use.
+    preds : The predictions of the model.
 
-    corpus_folder : The folder containing the corpus.
+    labels : The actual labels.
 
     Returns
     -------
-    documents : The retrieved documents.
+    accuracy : The accuracy of the model.
     """
-    # load the data
-    X, Y = load_data(corpus_folder)
+    pred_flat = np.argmax(preds, axis=1).flatten()
+    labels_flat = labels.flatten()
+    return np.sum(pred_flat == labels_flat) / len(labels_flat)
 
-    # create a dataset
-    dataset = torch.utils.data.TensorDataset(torch.tensor(X))
 
-    # create a data loader
-    data_loader = torch.utils.data.DataLoader(dataset, batch_size=1)
+def run_inference(model, input_ids: torch.Tensor, attention_masks: torch.Tensor) -> torch.Tensor:
+    """
+    Run inference on the given model.
 
-    # perform retrieval by computing the model output for each document
+    Parameters
+    ----------
+    model : The model to run inference on.
+
+    input_ids : The input ids to use.
+
+    attention_masks : The attention masks to use.
+
+    Returns
+    -------
+    predictions : The predictions of the model.
+    """
+    # get the device to run inference on
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    # send the model to the device
+    model.to(device)
+
+    # put the model in evaluation mode
+    model.eval()
+
+    # create the dataloader
+    dataloader = DataLoader(
+        TensorDataset(input_ids, attention_masks),
+        batch_size=len(input_ids),
+        sampler = SequentialSampler(TensorDataset(input_ids, attention_masks))
+        )
+    
+    # get the predictions
+    for batch in dataloader:
+        batch = tuple(t.to(device) for t in batch)
+        b_input_ids, b_input_mask = batch
+
+        with torch.no_grad():
+            outputs = model(b_input_ids, token_type_ids=None, attention_mask=b_input_mask)
+
+        logits = outputs[0]
+
+        logits = logits.detach().cpu().numpy()
+
+    return np.argmax(logits, axis=1).flatten()
+
+
+def neural_retrieval(model_output: torch.Tensor) -> list:
+    """
+    A function that retrieves documents based on the model output.
+
+    Parameters
+    ----------
+    model_output : The labels predicted by the model.
+
+    Returns
+    -------
+    documents : The indices of the documents retrieved based on the keywords.
+    """
     documents = []
-    for X_batch in data_loader:
-        Y_hat = model(X_batch)
-        if Y_hat > 0.5:
-            documents.append(X_batch)
+    for i, label in enumerate(model_output):
+        if label == 1:
+            documents.append(i)
 
     return documents
