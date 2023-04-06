@@ -239,16 +239,16 @@ def train_bert(model: BertForSequenceClassification, train_dataloader: DataLoade
             optimizer.step()
             scheduler.step()
 
-            # remove the batch from the GPU
+            # remove the batch from the GPU to free up memory
             del b_input_ids, b_input_mask, b_labels
 
         avg_train_loss = total_loss / len(train_dataloader)
 
         print("")
         print("  Average training loss: {0:.2f}".format(avg_train_loss))
-        print("Training complete!")
+    print("Training complete!")
 
-    return model
+    return model  
 
 
 def flat_accuracy(preds: np.ndarray, labels: np.ndarray) -> float:
@@ -270,7 +270,7 @@ def flat_accuracy(preds: np.ndarray, labels: np.ndarray) -> float:
     return np.sum(pred_flat == labels_flat) / len(labels_flat)
 
 
-def run_inference(model, input_ids: torch.Tensor, attention_masks: torch.Tensor) -> torch.Tensor:
+def run__batch_inference(model, input_ids: torch.Tensor, attention_masks: torch.Tensor) -> torch.Tensor:
     """
     Run inference on the given model.
 
@@ -298,11 +298,13 @@ def run_inference(model, input_ids: torch.Tensor, attention_masks: torch.Tensor)
     # create the dataloader
     dataloader = DataLoader(
         TensorDataset(input_ids, attention_masks),
-        batch_size=len(input_ids),
+        batch_size=32,
         sampler = SequentialSampler(TensorDataset(input_ids, attention_masks))
         )
     
     # get the predictions
+    predictions = []
+
     for batch in dataloader:
         batch = tuple(t.to(device) for t in batch)
         b_input_ids, b_input_mask = batch
@@ -314,10 +316,15 @@ def run_inference(model, input_ids: torch.Tensor, attention_masks: torch.Tensor)
 
         logits = logits.detach().cpu().numpy()
 
+        predictions.append(logits)
+
         # remove the batch from the GPU
         del b_input_ids, b_input_mask
 
-    return np.argmax(logits, axis=1).flatten()
+    # concatenate the predictions
+    predictions = np.concatenate(predictions, axis=0)
+
+    return np.argmax(predictions, axis=1).flatten()
 
 
 def neural_retrieval(model_output: torch.Tensor) -> list:
