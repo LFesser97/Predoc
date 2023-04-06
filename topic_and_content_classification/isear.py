@@ -12,6 +12,7 @@ This file contains all methods for working with the ISEAR dataset.
 
 import numpy as np
 import pandas as pd
+from sklearn.metrics import mutual_info_score
 
 # functions for working with the ISEAR dataset
 
@@ -29,9 +30,6 @@ def load_isear() -> pd.core.frame.DataFrame:
 
     # load the dataset
     isear = pd.read_csv("/content/drive/MyDrive/Topic and Content Classification/DATA.csv")
-
-    # keep only the columns 'SIT' and 'EMOT'
-    isear = isear[['SIT', 'EMOT']]
 
     return isear
 
@@ -100,5 +98,84 @@ def load_binary_isear_labels(isear: pd.core.frame.DataFrame, int_low: int, int_h
     """
     # get the labels of the ISEAR dataset
     labels = [1 if isear['EMOT'][i] == emot else 0 for i in range(int_low, int_high)]
-    
+
     return labels
+
+
+def get_correlation(isear: pd.core.frame.DataFrame, variable: str,
+                    error_type: str, true_positives: list, retrieval: list) -> float:
+    """
+    Get the correlation between a variable and the retrieved documents.
+
+    Parameters
+    ----------
+    isear : The ISEAR dataset.
+
+    variable : The variable in the dataset to get the correlation for.
+
+    error_type : The error type to get the correlation for.
+
+    true_positives : The indices of the true positives.
+
+    retrieval : The indices of the retrieved documents.
+
+    Returns
+    -------
+    correlation : The correlation between the variable and the retrieved documents.
+    """
+    assert error_type in ['false_positive', 'false_negative', 'error'], 'Unknown error type.'
+
+    # get the variable of the ISEAR dataset
+    variable = isear[variable]
+
+    # create a vector of zeroes with ones where the error type is the given error type
+    retrieved_docs = np.zeros(len(variable))
+    if error_type == 'false_positive':
+        retrieved_docs[retrieval] = 1
+        retrieved_docs[true_positives] = 0
+
+    elif error_type == 'false_negative':
+        retrieved_docs[true_positives] = 1
+        retrieved_docs[retrieval] = 0
+
+    # compare the retrieved documents with the correct documents
+    elif error_type == 'error':
+        retrieved_docs[retrieval] = 1
+        retrieved_docs[true_positives] -= 1
+        
+        # take the absolute value of every element in the vector
+        retrieved_docs = np.abs(retrieved_docs)
+
+    # get the correlation between the variable vector and the retrieval vector
+    correlation = np.corrcoef(variable, retrieved_docs)[0, 1]
+
+    return correlation
+
+
+def get_mutual_information(isear: pd.core.frame.DataFrame, variable: str, retrieval: list) -> float:
+    """
+    Get the mutual information between a variable and the retrieved documents.
+
+    Parameters
+    ----------
+    isear : The ISEAR dataset.
+
+    variable : The variable in the dataset to get the mutual information for.
+
+    retrieval : The indices of the retrieved documents.
+
+    Returns
+    -------
+    mutual_information : The mutual information between the variable and the retrieved documents.
+    """
+    # get the variable of the ISEAR dataset
+    variable = isear[variable]
+
+    # create a vector of zeroes with ones at the retrieved documents
+    retrieved_docs = np.zeros(len(variable))
+    retrieved_docs[retrieval] = 1
+
+    # get the mutual information between the variable vector and the retrieval vector
+    mutual_information = mutual_info_score(variable, retrieved_docs)
+
+    return mutual_information

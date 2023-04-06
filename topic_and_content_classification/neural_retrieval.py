@@ -167,7 +167,7 @@ def create_model(model_name: str, num_labels: int) -> BertForSequenceClassificat
 
 
 def train_bert(model: BertForSequenceClassification, train_dataloader: DataLoader, validation_dataloader: DataLoader,
-                epochs: int, batch_size: int) -> BertForSequenceClassification:
+                epochs: int) -> BertForSequenceClassification:
     """
     Train a model.
 
@@ -180,8 +180,6 @@ def train_bert(model: BertForSequenceClassification, train_dataloader: DataLoade
     validation_dataloader : The dataloader for the validation set.
 
     epochs : The number of epochs to train the model for.
-
-    batch_size : The batch size to use.
 
     Returns
     -------
@@ -270,7 +268,7 @@ def flat_accuracy(preds: np.ndarray, labels: np.ndarray) -> float:
     return np.sum(pred_flat == labels_flat) / len(labels_flat)
 
 
-def run__batch_inference(model, input_ids: torch.Tensor, attention_masks: torch.Tensor) -> torch.Tensor:
+def run_inference(model, input_ids: torch.Tensor, attention_masks: torch.Tensor) -> torch.Tensor:
     """
     Run inference on the given model.
 
