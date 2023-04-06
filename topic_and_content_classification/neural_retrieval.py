@@ -239,6 +239,9 @@ def train_bert(model: BertForSequenceClassification, train_dataloader: DataLoade
             optimizer.step()
             scheduler.step()
 
+            # remove the batch from the GPU
+            del b_input_ids, b_input_mask, b_labels
+
         avg_train_loss = total_loss / len(train_dataloader)
 
         print("")
@@ -310,6 +313,9 @@ def run_inference(model, input_ids: torch.Tensor, attention_masks: torch.Tensor)
         logits = outputs[0]
 
         logits = logits.detach().cpu().numpy()
+
+        # remove the batch from the GPU
+        del b_input_ids, b_input_mask
 
     return np.argmax(logits, axis=1).flatten()
 
