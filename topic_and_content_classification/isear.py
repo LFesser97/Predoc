@@ -13,6 +13,7 @@ This file contains all methods for working with the ISEAR dataset.
 import numpy as np
 import pandas as pd
 from sklearn.metrics import mutual_info_score
+from scipy.stats.stats import pearsonr  
 
 # functions for working with the ISEAR dataset
 
@@ -103,7 +104,7 @@ def load_binary_isear_labels(isear: pd.core.frame.DataFrame, int_low: int, int_h
 
 
 def get_correlation(isear: pd.core.frame.DataFrame, variable: str,
-                    error_type: str, true_positives: list, retrieval: list) -> float:
+                    error_type: str, true_positives: list, retrieval: list) -> tuple:
     """
     Get the correlation between a variable and the retrieved documents.
 
@@ -147,7 +148,7 @@ def get_correlation(isear: pd.core.frame.DataFrame, variable: str,
         retrieved_docs = np.abs(retrieved_docs)
 
     # get the correlation between the variable vector and the retrieval vector
-    correlation = np.corrcoef(variable, retrieved_docs)[0, 1]
+    correlation = pearsonr(variable, retrieved_docs)
 
     return correlation
 
@@ -178,4 +179,4 @@ def get_mutual_information(isear: pd.core.frame.DataFrame, variable: str, retrie
     # get the mutual information between the variable vector and the retrieval vector
     mutual_information = mutual_info_score(variable, retrieved_docs)
 
-    return mutual_information
+    return mutual_information[0], mutual_information[1]
