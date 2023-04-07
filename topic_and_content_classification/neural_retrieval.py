@@ -343,3 +343,60 @@ def neural_retrieval(model_output: torch.Tensor) -> list:
             documents.append(i)
 
     return documents
+
+
+def latent_representation(model: BertForSequenceClassification, input_ids: torch.Tensor,
+                          attention_masks: torch.Tensor) -> torch.Tensor:
+    """
+    A function that retrieves the latent representations of a BERT model
+    given the input ids and attention masks of the documents.
+
+    Parameters
+    ----------
+    model : The model to retrieve the latent representation from.
+
+    input_ids : The input ids to use.
+
+    attention_masks : The attention masks to use.
+
+    Returns
+    -------
+    latent_representation : The latent representation of the documents.
+    """
+    # get the device to run inference on
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    # send the model to the device
+    model.to(device)
+
+    # put the model in evaluation mode
+    model.eval()
+
+    # create the dataloader
+    dataloader = DataLoader(
+        TensorDataset(input_ids, attention_masks),
+        batch_size=32,
+        sampler = SequentialSampler(TensorDataset(input_ids, attention_masks))
+        )
+    
+    # get the predictions
+    latent_representation = []
+
+    for batch in dataloader:
+        batch = tuple(t.to(device) for t in batch)
+        b_input_ids, b_input_mask = batch
+
+        with torch.no_grad():
+            outputs = model(b_input_ids, token_type_ids=None, attention_mask=b_input_mask)
+
+        logits = outputs[0]
+        last_hidden_states = outputs[2]
+
+        last_hidden_states = last_hidden_states[-1].detach().cpu().numpy()
+
+        latent_representation.append(last_hidden_states)
+
+        # remove the batch from the GPU
+        del b_input_ids, b_input_mask
+
+    return latent_representation
