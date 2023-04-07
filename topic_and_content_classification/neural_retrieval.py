@@ -379,8 +379,8 @@ def latent_representation(model: BertForSequenceClassification, input_ids: torch
         sampler = SequentialSampler(TensorDataset(input_ids, attention_masks))
         )
     
-    # get the predictions
-    latent_representation = []
+    # get the 768 dimensional latent representations before the classification layer
+    latent_representations = []
 
     for batch in dataloader:
         batch = tuple(t.to(device) for t in batch)
@@ -389,14 +389,16 @@ def latent_representation(model: BertForSequenceClassification, input_ids: torch
         with torch.no_grad():
             outputs = model(b_input_ids, token_type_ids=None, attention_mask=b_input_mask)
 
-        logits = outputs[0]
-        last_hidden_states = outputs[2]
+        latent_representation = outputs[0]
 
-        last_hidden_states = last_hidden_states[-1].detach().cpu().numpy()
+        latent_representation = latent_representation.detach().cpu().numpy()
 
-        latent_representation.append(last_hidden_states)
+        latent_representations.append(latent_representation)
 
         # remove the batch from the GPU
         del b_input_ids, b_input_mask
 
-    return latent_representation
+    # concatenate the latent representations
+    latent_representations = np.concatenate(latent_representations, axis=0)
+    
+    return latent_representations

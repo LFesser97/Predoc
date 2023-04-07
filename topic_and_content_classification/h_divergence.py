@@ -33,24 +33,27 @@ def compute_H_divergence(labeled: np.ndarray, unlabeled: np.ndarray,
     -------
     H_divergence : The H-divergence between the labeled and unlabeled data.
     """
-    # for each element in the labeled data, compute the probabilities of the classes
-    p_L = model.predict(labeled)
+    # convert the data to torch tensors
+    labeled = torch.from_numpy(labeled).float()
+    unlabeled = torch.from_numpy(unlabeled).float()
 
-    # for each element in the unlabeled data, compute the probabilities of the classes
-    p_U = model.predict(unlabeled)
+    # for each element in the labeled data, compute the probabilities of the classes
+    p_L = model(labeled)
+    p_U = model(unlabeled)
 
     # sum the probabilities of class 0 for each element in the labeled data and divide by the number of elements
-    p_L_0 = np.sum(p_L[:, 0])
+    p_L_0 = torch.sum(p_L[:, 0])
     p_L_0 /= labeled.shape[0]
 
     # sum the probabilities of class 0 for each element in the unlabeled data and divide by the number of elements
-    p_U_0 = np.sum(p_U[:, 0])
+    p_U_0 = torch.sum(p_U[:, 0])
     p_U_0 /= unlabeled.shape[0]
 
     # compute the H-divergence as the absolute difference between p_U_0 and p_L_0
-    H_divergence = np.abs(p_U_0 - p_L_0)
+    H_divergence = torch.abs(p_U_0 - p_L_0)
 
-    return H_divergence
+    # convert the H-divergence to a numpy float
+    return H_divergence.item()
 
 
 # train a discriminative model on the labeled data and unlabeled data
@@ -79,6 +82,7 @@ def train_discriminative_model(labeled: np.ndarray, unlabeled: np.ndarray,
     X_train = np.vstack((labeled, unlabeled))
     Y_train = np.vstack((y_L, y_U))
     X_train = torch.from_numpy(X_train).float()
+    Y_train = torch.from_numpy(Y_train).squeeze().long()
 
     # build the model:
     model = get_discriminative_model(input_shape)

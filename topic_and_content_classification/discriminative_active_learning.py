@@ -23,8 +23,7 @@ import h_divergence as hd
 
 # functions for discriminative active learning
 
-def discriminative_active_learning(Model: torch.nn.Sequential, X_train: np.ndarray, 
-                                   Y_train: np.ndarray, labeled_idx: np.ndarray,
+def discriminative_active_learning(Model: torch.nn.Sequential, X_train: np.ndarray, labeled_idx: np.ndarray, 
                                    batch_size: int, n_batches: int) -> np.ndarray:
     """
     Perform discriminative active learning for a given model and dataset.
@@ -34,8 +33,6 @@ def discriminative_active_learning(Model: torch.nn.Sequential, X_train: np.ndarr
     Model : The model to perform active learning for.
 
     X_train : The training data.
-
-    Y_train : The training labels.
 
     labeled_idx : The indices of the labeled data.
 
