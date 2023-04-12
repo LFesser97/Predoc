@@ -24,7 +24,7 @@ import h_divergence as hd
 # functions for discriminative active learning
 
 def discriminative_active_learning(Model: torch.nn.Sequential, X_train: np.ndarray, labeled_idx: np.ndarray, 
-                                   get_latent_rep: function, batch_size: int, n_batches: int) -> np.ndarray:
+                                   get_latent_rep, batch_size: int, n_batches: int) -> np.ndarray:
     """
     Perform discriminative active learning for a given model and dataset.
 
