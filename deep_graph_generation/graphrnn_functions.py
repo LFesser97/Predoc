@@ -8,14 +8,66 @@ Created on Sun Apr 2 2023
 This file contains all relevant functions and classes from the GraphRNN repo.
 """
 
+import torch
+import torch.nn as nn
+import numpy as np
+import torch.nn.functional as F
+from torch.autograd import Variable
+from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
+
+import networkx as nx
+import os
+import pickle
+import argparse
+import time
+import random
+
 # from train.py
 
 def train_rnn_epoch(epoch, args, rnn, output, data_loader,
                     optimizer_rnn, optimizer_output,
                     scheduler_rnn, scheduler_output):
+    """
+    Train one epoch of the RNN model
+
+    Parameters
+    ----------
+    epoch : int
+        Current epoch
+
+    args : argparse.Namespace
+        Arguments
+
+    rnn : GraphRNN
+        RNN model
+
+    output : GraphRNN
+        Output model
+
+    data_loader : DataLoader
+        Data loader
+
+    optimizer_rnn : torch.optim.Optimizer
+        Optimizer for RNN
+
+    optimizer_output : torch.optim.Optimizer
+        Optimizer for output
+
+    scheduler_rnn : torch.optim.lr_scheduler._LRScheduler
+        Learning rate scheduler for RNN
+
+    scheduler_output : torch.optim.lr_scheduler._LRScheduler
+        Learning rate scheduler for output
+
+    Returns
+    -------
+    loss_sum : float
+        Sum of loss over all batches
+    """
     rnn.train()
     output.train()
     loss_sum = 0
+
     for batch_idx, data in enumerate(data_loader):
         rnn.zero_grad()
         output.zero_grad()
@@ -25,6 +77,7 @@ def train_rnn_epoch(epoch, args, rnn, output, data_loader,
         y_len_max = max(y_len_unsorted)
         x_unsorted = x_unsorted[:, 0:y_len_max, :]
         y_unsorted = y_unsorted[:, 0:y_len_max, :]
+
         # initialize lstm hidden state according to batch size
         rnn.hidden = rnn.init_hidden(batch_size=x_unsorted.size(0))
         # output.hidden = output.init_hidden(batch_size=x_unsorted.size(0)*x_unsorted.size(1))
@@ -35,9 +88,12 @@ def train_rnn_epoch(epoch, args, rnn, output, data_loader,
         x = torch.index_select(x_unsorted,0,sort_index)
         y = torch.index_select(y_unsorted,0,sort_index)
 
+        """ NEED TO DEFINE pack_padded_sequence """
+
         # input, output for output rnn module
         # a smart use of pytorch builtin function: pack variable--b1_l1,b2_l1,...,b1_l2,b2_l2,...
         y_reshape = pack_padded_sequence(y,y_len,batch_first=True).data
+
         # reverse y_reshape, so that their lengths are sorted, add dimension
         idx = [i for i in range(y_reshape.size(0)-1, -1, -1)]
         idx = torch.LongTensor(idx)
@@ -46,26 +102,36 @@ def train_rnn_epoch(epoch, args, rnn, output, data_loader,
 
         output_x = torch.cat((torch.ones(y_reshape.size(0),1,1),y_reshape[:,0:-1,0:1]),dim=1)
         output_y = y_reshape
+
         # batch size for output module: sum(y_len)
         output_y_len = []
         output_y_len_bin = np.bincount(np.array(y_len))
         for i in range(len(output_y_len_bin)-1,0,-1):
             count_temp = np.sum(output_y_len_bin[i:]) # count how many y_len is above i
             output_y_len.extend([min(i,y.size(2))]*count_temp) # put them in output_y_len; max value should not exceed y.size(2)
+
+        """ NEED TO DEFINE Variable """
+
         # pack into variable
         x = Variable(x).cuda()
         y = Variable(y).cuda()
         output_x = Variable(output_x).cuda()
         output_y = Variable(output_y).cuda()
+
         # print(output_y_len)
         # print('len',len(output_y_len))
         # print('y',y.size())
         # print('output_y',output_y.size())
 
+        """ NEED TO DEFINE pack_padded_sequence """
+
 
         # if using ground truth to train
         h = rnn(x, pack=True, input_len=y_len)
         h = pack_padded_sequence(h,y_len,batch_first=True).data # get packed hidden vector
+
+        """ NEED TO DEFINE F """
+
         # reverse h
         idx = [i for i in range(h.size(0) - 1, -1, -1)]
         idx = Variable(torch.LongTensor(idx)).cuda()
@@ -74,14 +140,17 @@ def train_rnn_epoch(epoch, args, rnn, output, data_loader,
         output.hidden = torch.cat((h.view(1,h.size(0),h.size(1)),hidden_null),dim=0) # num_layers, batch_size, hidden_size
         y_pred = output(output_x, pack=True, input_len=output_y_len)
         y_pred = F.sigmoid(y_pred)
+
         # clean
         y_pred = pack_padded_sequence(y_pred, output_y_len, batch_first=True)
         y_pred = pad_packed_sequence(y_pred, batch_first=True)[0]
         output_y = pack_padded_sequence(output_y,output_y_len,batch_first=True)
         output_y = pad_packed_sequence(output_y,batch_first=True)[0]
+
         # use cross entropy loss
         loss = binary_cross_entropy_weight(y_pred, output_y)
         loss.backward()
+
         # update deterministic and lstm
         optimizer_output.step()
         optimizer_rnn.step()
@@ -93,17 +162,46 @@ def train_rnn_epoch(epoch, args, rnn, output, data_loader,
             print('Epoch: {}/{}, train loss: {:.6f}, graph type: {}, num_layer: {}, hidden: {}'.format(
                 epoch, args.epochs,loss.data[0], args.graph_type, args.num_layers, args.hidden_size_rnn))
 
+        """ NEED TO DEFINE log_value """
+
         # logging
         log_value('loss_'+args.fname, loss.data[0], epoch*args.batch_ratio+batch_idx)
         feature_dim = y.size(1)*y.size(2)
         loss_sum += loss.data[0]*feature_dim
+
     return loss_sum/(batch_idx+1)
 
 
 def test_rnn_epoch(epoch, args, rnn, output, test_batch_size=16):
+    """
+    Test the model on test set.
+
+    Parameters
+    ----------
+    epoch : int
+        current epoch
+
+    args : argparse.Namespace
+
+    rnn : torch.nn.Module
+        rnn model
+
+    output : torch.nn.Module
+        output model
+
+    test_batch_size : int
+        batch size for testing
+
+    Returns
+    -------
+    loss_sum : float
+        average loss on test set
+    """
     rnn.hidden = rnn.init_hidden(test_batch_size)
     rnn.eval()
     output.eval()
+
+    """ NEED TO DEFINE Variable """
 
     # generate graphs
     max_num_node = int(args.max_num_node)
@@ -111,12 +209,14 @@ def test_rnn_epoch(epoch, args, rnn, output, test_batch_size=16):
     x_step = Variable(torch.ones(test_batch_size,1,args.max_prev_node)).cuda()
     for i in range(max_num_node):
         h = rnn(x_step)
+
         # output.hidden = h.permute(1,0,2)
         hidden_null = Variable(torch.zeros(args.num_layers - 1, h.size(0), h.size(2))).cuda()
         output.hidden = torch.cat((h.permute(1,0,2), hidden_null),
                                   dim=0)  # num_layers, batch_size, hidden_size
         x_step = Variable(torch.zeros(test_batch_size,1,args.max_prev_node)).cuda()
         output_x_step = Variable(torch.ones(test_batch_size,1,1)).cuda()
+
         for j in range(min(args.max_prev_node,i+1)):
             output_y_pred_step = output(output_x_step)
             output_x_step = sample_sigmoid(output_y_pred_step, sample=True, sample_time=1)
@@ -125,6 +225,8 @@ def test_rnn_epoch(epoch, args, rnn, output, test_batch_size=16):
         y_pred_long[:, i:i + 1, :] = x_step
         rnn.hidden = Variable(rnn.hidden.data).cuda()
     y_pred_long_data = y_pred_long.data.long()
+
+    """ NEED TO DEFINE, get_graph"""
 
     # save graphs as pickle
     G_pred_list = []
@@ -137,9 +239,34 @@ def test_rnn_epoch(epoch, args, rnn, output, test_batch_size=16):
 
 
 def train_rnn_forward_epoch(epoch, args, rnn, output, data_loader):
+    """
+    Train the model for one epoch.
+
+    Parameters
+    ----------
+    epoch : int
+        current epoch
+
+    args : argparse.Namespace
+
+    rnn : torch.nn.Module
+        rnn model
+
+    output : torch.nn.Module
+        output model
+
+    data_loader : torch.utils.data.DataLoader
+        data loader for training set
+
+    Returns
+    -------
+    loss_sum : float
+        average loss on training set
+    """
     rnn.train()
     output.train()
     loss_sum = 0
+
     for batch_idx, data in enumerate(data_loader):
         rnn.zero_grad()
         output.zero_grad()
@@ -159,6 +286,8 @@ def train_rnn_forward_epoch(epoch, args, rnn, output, data_loader):
         x = torch.index_select(x_unsorted,0,sort_index)
         y = torch.index_select(y_unsorted,0,sort_index)
 
+        """ NEED TO DEFINE pack_padded_sequence """
+
         # input, output for output rnn module
         # a smart use of pytorch builtin function: pack variable--b1_l1,b2_l1,...,b1_l2,b2_l2,...
         y_reshape = pack_padded_sequence(y,y_len,batch_first=True).data
@@ -176,6 +305,9 @@ def train_rnn_forward_epoch(epoch, args, rnn, output, data_loader):
         for i in range(len(output_y_len_bin)-1,0,-1):
             count_temp = np.sum(output_y_len_bin[i:]) # count how many y_len is above i
             output_y_len.extend([min(i,y.size(2))]*count_temp) # put them in output_y_len; max value should not exceed y.size(2)
+        
+        """ NEED TO DEFINE Variable """
+
         # pack into variable
         x = Variable(x).cuda()
         y = Variable(y).cuda()
@@ -186,6 +318,7 @@ def train_rnn_forward_epoch(epoch, args, rnn, output, data_loader):
         # print('y',y.size())
         # print('output_y',output_y.size())
 
+        """ NEED TO DEFINE pack_padded_sequence, F"""
 
         # if using ground truth to train
         h = rnn(x, pack=True, input_len=y_len)
@@ -198,6 +331,7 @@ def train_rnn_forward_epoch(epoch, args, rnn, output, data_loader):
         output.hidden = torch.cat((h.view(1,h.size(0),h.size(1)),hidden_null),dim=0) # num_layers, batch_size, hidden_size
         y_pred = output(output_x, pack=True, input_len=output_y_len)
         y_pred = F.sigmoid(y_pred)
+
         # clean
         y_pred = pack_padded_sequence(y_pred, output_y_len, batch_first=True)
         y_pred = pad_packed_sequence(y_pred, batch_first=True)[0]
@@ -211,6 +345,8 @@ def train_rnn_forward_epoch(epoch, args, rnn, output, data_loader):
             print('Epoch: {}/{}, train loss: {:.6f}, graph type: {}, num_layer: {}, hidden: {}'.format(
                 epoch, args.epochs,loss.data[0], args.graph_type, args.num_layers, args.hidden_size_rnn))
 
+        """ NEED TO DEFINE log_value"""
+
         # logging
         log_value('loss_'+args.fname, loss.data[0], epoch*args.batch_ratio+batch_idx)
         # print(y_pred.size())
@@ -222,6 +358,23 @@ def train_rnn_forward_epoch(epoch, args, rnn, output, data_loader):
 # train function for LSTM
 
 def train(args, dataset_train, rnn, output):
+    """
+    Train LSTM model
+
+    Parameters
+    ----------
+    args: arguments
+
+    dataset_train: training dataset
+
+    rnn: LSTM model
+
+    output: output model
+
+    Returns
+    -------
+    None
+    """
     # check if load existing model
     if args.load:
         fname = args.model_save_path + args.fname + 'lstm_' + str(args.load_epoch) + '.dat'
@@ -235,12 +388,18 @@ def train(args, dataset_train, rnn, output):
     else:
         epoch = 1
 
+    """ NEED TO DEFINE optim, MultiStepLR """
+
     # initialize optimizer
     optimizer_rnn = optim.Adam(list(rnn.parameters()), lr=args.lr)
     optimizer_output = optim.Adam(list(output.parameters()), lr=args.lr)
 
     scheduler_rnn = MultiStepLR(optimizer_rnn, milestones=args.milestones, gamma=args.lr_rate)
     scheduler_output = MultiStepLR(optimizer_output, milestones=args.milestones, gamma=args.lr_rate)
+
+    """ NEED TO DEFINE time """
+
+    """ NEED TO DELETE train_vae_epoch, train_mlp_epoch """
 
     # start main loop
     time_all = np.zeros(args.epochs)
@@ -261,6 +420,8 @@ def train(args, dataset_train, rnn, output):
                             scheduler_rnn, scheduler_output)
         time_end = tm.time()
         time_all[epoch - 1] = time_end - time_start
+
+        """ NEED TO DELETE test_vae_epoch, test_mlp_epoch """
         # test
         if epoch % args.epochs_test == 0 and epoch>=args.epochs_test_start:
             for sample_time in range(1,4):
@@ -275,6 +436,8 @@ def train(args, dataset_train, rnn, output):
                     G_pred.extend(G_pred_step)
                 # save graphs
                 fname = args.graph_save_path + args.fname_pred + str(epoch) +'_'+str(sample_time) + '.dat'
+
+                """ NEED TO DEFINE save_graph_list """
                 save_graph_list(G_pred, fname)
                 if 'GraphRNN_RNN' in args.note:
                     break
@@ -295,6 +458,19 @@ def train(args, dataset_train, rnn, output):
 # from test_MMD.py
 
 def compute_kernel(x,y):
+    """
+    Compute kernel matrix
+
+    Parameters
+    ----------
+    x: tensor, shape (n_samples, n_features)
+
+    y: tensor, shape (n_samples, n_features)
+
+    Returns
+    -------
+    kernel: tensor, shape (n_samples, n_samples)
+    """
     x_size = x.size(0)
     y_size = y.size(0)
     dim = x.size(1)
@@ -306,6 +482,20 @@ def compute_kernel(x,y):
 
 
 def compute_mmd(x,y):
+    """
+    Compute MMD between two samples
+
+    Parameters
+    ----------
+    x: tensor, shape (n_samples, n_features)
+
+    y: tensor, shape (n_samples, n_features)
+
+    Returns
+    -------
+    mmd: tensor, shape (1)
+    """
+
     x_kernel = compute_kernel(x,x)
     # print(x_kernel)
     y_kernel = compute_kernel(y,y)
@@ -319,7 +509,6 @@ def compute_mmd(x,y):
 
 def binary_cross_entropy_weight(y_pred, y,has_weight=False, weight_length=1, weight_max=10):
     '''
-
     :param y_pred:
     :param y:
     :param weight_length: how long until the end of sequence shall we add weight
@@ -338,6 +527,21 @@ def binary_cross_entropy_weight(y_pred, y,has_weight=False, weight_length=1, wei
 
 
 def sample_tensor(y,sample=True, thresh=0.5):
+    """
+    Sample from a tensor of Bernoulli
+
+    Parameters
+    ----------
+    y: tensor, shape (n_samples, n_features)
+
+    sample: bool, whether to sample or to use max likelihood
+
+    thresh: float, threshold for max likelihood
+
+    Returns
+    -------
+    y_result: tensor, shape (n_samples, n_features)
+    """
     # do sampling
     if sample:
         y_thresh = Variable(torch.rand(y.size())).cuda()
@@ -351,7 +555,6 @@ def sample_tensor(y,sample=True, thresh=0.5):
 
 def gumbel_softmax(logits, temperature, eps=1e-9):
     '''
-
     :param logits: shape: N*L
     :param temperature:
     :param eps:
@@ -370,7 +573,6 @@ def gumbel_softmax(logits, temperature, eps=1e-9):
 
 def gumbel_sigmoid(logits, temperature):
     '''
-
     :param logits:
     :param temperature:
     :param eps:
@@ -388,7 +590,7 @@ def gumbel_sigmoid(logits, temperature):
 
 def sample_sigmoid(y, sample, thresh=0.5, sample_time=2):
     '''
-        do sampling over unnormalized score
+    do sampling over unnormalized score
     :param y: input
     :param sample: Bool
     :param thresh: if not sample, the threshold
@@ -424,7 +626,7 @@ def sample_sigmoid(y, sample, thresh=0.5, sample_time=2):
 
 def sample_sigmoid_supervised(y_pred, y, current, y_len, sample_time=2):
     '''
-        do sampling over unnormalized score
+    do sampling over unnormalized score
     :param y_pred: input
     :param y: supervision
     :param sample: Bool
@@ -463,7 +665,7 @@ def sample_sigmoid_supervised(y_pred, y, current, y_len, sample_time=2):
 
 def sample_sigmoid_supervised_simple(y_pred, y, current, y_len, sample_time=2):
     '''
-        do sampling over unnormalized score
+    do sampling over unnormalized score
     :param y_pred: input
     :param y: supervision
     :param sample: Bool
@@ -495,6 +697,26 @@ def sample_sigmoid_supervised_simple(y_pred, y, current, y_len, sample_time=2):
 # plain LSTM model
 
 class LSTM_plain(nn.Module):
+    """
+    Plain LSTM model
+
+    Parameters
+    ----------
+    input_size : int
+
+    embedding_size : int
+
+    hidden_size : int
+
+    num_layers : int
+
+    has_input : bool
+
+    has_output : bool
+
+    output_size : int    
+    """
+
     def __init__(self, input_size, embedding_size, hidden_size, num_layers, has_input=True, has_output=False, output_size=None):
         super(LSTM_plain, self).__init__()
         self.num_layers = num_layers
@@ -527,9 +749,11 @@ class LSTM_plain(nn.Module):
             if isinstance(m, nn.Linear):
                 m.weight.data = init.xavier_uniform(m.weight.data, gain=nn.init.calculate_gain('relu'))
 
+
     def init_hidden(self, batch_size):
         return (Variable(torch.zeros(self.num_layers, batch_size, self.hidden_size)).cuda(),
                 Variable(torch.zeros(self.num_layers, batch_size, self.hidden_size)).cuda())
+    
 
     def forward(self, input_raw, pack=False, input_len=None):
         if self.has_input:
@@ -549,6 +773,21 @@ class LSTM_plain(nn.Module):
     
 
 def message_passing(node_neighbor, node_embedding, model):
+    """
+    message passing
+
+    Parameters
+    ----------
+    node_neighbor : list of list
+
+    node_embedding : list of Variable
+
+    model : model
+
+    Returns
+    -------
+    node_embedding_new : list of Variable
+    """
     node_embedding_new = []
     for i in range(len(node_neighbor)):
         neighbor_num = len(node_neighbor[i])
@@ -576,6 +815,19 @@ def message_passing(node_neighbor, node_embedding, model):
 
 
 def calc_graph_embedding(node_embedding_cat, model):
+    """
+    calculate graph embedding
+
+    Parameters
+    ----------
+    node_embedding_cat : Variable
+
+    model : model
+
+    Returns
+    -------
+    graph_embedding : Variable
+    """
 
     node_embedding_graph = model.f_m(node_embedding_cat)
     node_embedding_graph_gate = model.f_gate(node_embedding_cat)
@@ -584,6 +836,19 @@ def calc_graph_embedding(node_embedding_cat, model):
 
 
 def calc_init_embedding(node_embedding_cat, model):
+    """
+    calculate initial embedding
+
+    Parameters
+    ----------
+    node_embedding_cat : Variable
+
+    model : model
+
+    Returns
+    -------
+    init_embedding : Variable
+    """
     node_embedding_init = model.f_m_init(node_embedding_cat)
     node_embedding_init_gate = model.f_gate_init(node_embedding_cat)
     init_embedding = torch.sum(torch.mul(node_embedding_init, node_embedding_init_gate), dim=0, keepdim=True)
@@ -619,7 +884,6 @@ def bfs_seq(G, start_id):
 
 def encode_adj(adj, max_prev_node=10, is_full = False):
     '''
-
     :param adj: n*n, rows means time step, while columns are input dimension
     :param max_degree: we want to keep row number, but truncate column numbers
     :return:
@@ -784,6 +1048,30 @@ def test_encode_decode_adj_full():
 
 
 class Graph_sequence_sampler_pytorch(torch.utils.data.Dataset):
+    """
+    Graph sequence sampler
+
+    Parameters
+    ----------
+    G_list: list of networkx graphs
+
+    max_num_node: int
+
+    max_prev_node: int
+
+    iteration: int
+
+    Returns
+    -------
+    self: Graph_sequence_sampler_pytorch
+
+    Examples
+    --------
+    >>> from graphgallery.sequence import Graph_sequence_sampler_pytorch
+    >>> G_list = [nx.karate_club_graph(), nx.ladder_graph(10)]
+    >>> data = Graph_sequence_sampler_pytorch(G_list)
+    """
+
     def __init__(self, G_list, max_num_node=None, max_prev_node=None, iteration=20000):
         self.adj_all = []
         self.len_all = []
@@ -807,8 +1095,12 @@ class Graph_sequence_sampler_pytorch(torch.utils.data.Dataset):
         # len_batch_order = np.argsort(np.array(self.len_all))[::-1]
         # self.len_all = [self.len_all[i] for i in len_batch_order]
         # self.adj_all = [self.adj_all[i] for i in len_batch_order]
+
+
     def __len__(self):
         return len(self.adj_all)
+
+
     def __getitem__(self, idx):
         adj_copy = self.adj_all[idx].copy()
         x_batch = np.zeros((self.n, self.max_prev_node))  # here zeros are padded for small graph
@@ -830,6 +1122,7 @@ class Graph_sequence_sampler_pytorch(torch.utils.data.Dataset):
         y_batch[0:adj_encoded.shape[0], :] = adj_encoded
         x_batch[1:adj_encoded.shape[0] + 1, :] = adj_encoded
         return {'x':x_batch,'y':y_batch, 'len':len_batch}
+    
 
     def calc_max_prev_node(self, iter=20000,topk=10):
         max_prev_node = []
@@ -858,6 +1151,10 @@ class Graph_sequence_sampler_pytorch(torch.utils.data.Dataset):
 # from args.py
 
 class Args():
+    """
+    Arguments for GraphRNN
+    """
+
     def __init__(self):
         ### if clean tensorboard
         self.clean_tensorboard = False

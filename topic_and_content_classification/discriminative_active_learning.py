@@ -24,7 +24,7 @@ import h_divergence as hd
 # functions for discriminative active learning
 
 def discriminative_active_learning(Model: torch.nn.Sequential, X_train: np.ndarray, labeled_idx: np.ndarray, 
-                                   batch_size: int, n_batches: int) -> np.ndarray:
+                                   get_latent_rep: function, batch_size: int, n_batches: int) -> np.ndarray:
     """
     Perform discriminative active learning for a given model and dataset.
 
@@ -36,6 +36,8 @@ def discriminative_active_learning(Model: torch.nn.Sequential, X_train: np.ndarr
 
     labeled_idx : The indices of the labeled data.
 
+    get_latent_rep : The function to get the latent representation of the data.
+
     batch_size : The size of the active learning batches.
 
     n_batches : The number of batches to select.
@@ -44,10 +46,18 @@ def discriminative_active_learning(Model: torch.nn.Sequential, X_train: np.ndarr
     -------
     batches : The batches of indices to label.
     """
+    # assert that all inputs are of the correct type
+    assert isinstance(Model, torch.nn.Sequential)
+    assert isinstance(X_train, np.ndarray)
+    assert isinstance(labeled_idx, np.ndarray)
+    assert callable(get_latent_rep)
+    assert isinstance(batch_size, int)
+    assert isinstance(n_batches, int)
+
     unlabeled_idx = get_unlabeled_idx(X_train, labeled_idx)
 
     # get the latent representation of X_train using get_latent_representation
-    latent_representation = hd.get_latent_representation(Model, X_train) 
+    latent_representation = get_latent_rep(Model, X_train) 
 
     # iteratively sub-sample the unlabeled data using the DAL routine
     batches = []
