@@ -77,6 +77,16 @@ def create_shareholder_network(dataset: pd.DataFrame) -> nx.Graph:
                 network.nodes[node]["type"] = "Bank/ Individual"
 
     except KeyError:
-        print("The dataset does not contain a 'Shareholders' column.")
+        # print("The dataset does not contain a 'Shareholders' column.")
+        for index, row in dataset.iterrows():
+            for shareholder in row["shareholders"]:
+                network.add_edge(shareholder, row["title"])
+
+        # append the type of the nodes to the network
+        for node in network.nodes():
+            if node in dataset["title"].values:
+                network.nodes[node]["type"] = "company"
+            else:
+                network.nodes[node]["type"] = "Bank/ Individual"
 
     return network
