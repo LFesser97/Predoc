@@ -46,14 +46,6 @@ def discriminative_active_learning(Model: torch.nn.Sequential, X_train: np.ndarr
     -------
     batches : The batches of indices to label.
     """
-    # assert that all inputs are of the correct type
-    assert isinstance(Model, torch.nn.Sequential)
-    assert isinstance(X_train, np.ndarray)
-    assert isinstance(labeled_idx, np.ndarray)
-    assert callable(get_latent_rep)
-    assert isinstance(batch_size, int)
-    assert isinstance(n_batches, int)
-
     unlabeled_idx = get_unlabeled_idx(X_train, labeled_idx)
 
     # get the latent representation of X_train using get_latent_representation
