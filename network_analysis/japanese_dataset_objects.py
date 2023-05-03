@@ -22,6 +22,7 @@ import visualize_networks as vn
 import network_methods as nm
 
 import create_knowledge_graphs as kg
+import knowledge_graph_methods as kgm
 import visualize_knowledge_graphs as vkg
 
 import load_datasets as ld
@@ -50,6 +51,7 @@ class JapaneseDataset:
         self.knowledge_graphs = {}
 
         self.known_network_motifs = {}
+        self.known_knowledge_graph_motifs = {}
 
 
     # methods for reading in datasets
@@ -254,6 +256,30 @@ class JapaneseDataset:
 
 
     # methods for knowledge graphs
+
+    def mine_motifs_from_knowledge_graph(self, knowledge_graph: str, motifs: dict) -> None:
+        """
+        This method mines motifs from a knowledge graph.
+
+        Parameters
+        ----------
+        knowledge_graph : The name of the knowledge graph.
+
+        motifs : The motifs that should be mined.
+
+        Returns
+        -------
+        None.
+            The motifs are appended to the knowledge graph.
+        """
+        assert knowledge_graph in self.knowledge_graphs, "The knowledge graph has not been created yet."
+
+        # append the motifs to the known motifs dictionary
+        self.known_knowledge_graph_motifs.update(motifs)
+
+        self.knowledge_graphs[knowledge_graph].graph.update(
+            {"motif_counts": kgm.count_knowledge_motifs(self.knowledge_graphs[knowledge_graph], motifs)})
+
 
     def visualize_knowledge_graph(self, knowledge_graph: str) -> None:
         """
