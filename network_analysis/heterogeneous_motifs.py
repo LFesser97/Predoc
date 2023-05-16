@@ -1,11 +1,11 @@
 """
-knowledge_graph_methods.py
+heterogeneous_motifs.py
 
-Created on Wed May 03 2023
+Created on Tue May 16 2023
 
-author: Lukas
+@author: Lukas
 
-This file contains all functions for analyzing knowledge graphs.
+This file contains all functions for heterogenous motifs.
 """
 
 # import packages
@@ -16,14 +16,55 @@ import pandas as pd
 import itertools
 
 
-# import other files from this project
+# class and methods for heterogeneous motifs
 
-import network_methods as nm
+class heterogeneous_motif:
+    """
+    A class specifically for heterogeneous motifs.
+    """
+    def __init__(self, name: str, motif: nx.Graph) -> None:
+        """
+        This function initializes a heterogeneous motif.
+
+        Parameters
+        ----------
+        name : The name of the motif.
+
+        motif : The motif, i.e. a subgraph of a knowledge graph.
+
+        Returns
+        -------
+        None : Initializes a heterogeneous motif.
+        """
+        assert nx.is_connected(motif), "The motif is not connected."
+        assert all([motif.nodes[node]["type"] for node in motif.nodes()]), "The motif is not heterogeneous."
+
+
+        self.name = name
+        self.motif = motif
+        self.frequency = -1
+        self.relative_frequencies = {}
+
+
+    def count_frequency(self, knowledge_graph: nx.Graph) -> None:
+        """
+        This function counts the frequency of a motif in a knowledge graph.
+        Currently only supports motifs of size 3.
+
+        Parameters
+        ----------
+        knowledge_graph : The knowledge graph.
+
+        Returns
+        -------
+        None : Updates the frequency of the motif.
+        """
+        self.frequency = count_knowledge_motifs(self.motif, knowledge_graph)
 
 
 # functions for motif-based analysis of knowledge graphs
 
-def count_knowledge_motifs(graph: nx.Graph, motifs: dict) -> dict:
+def count_knowledge_motifs(graph: nx.Graph, motif: nx.Graph) -> int:
     """
     This function counts the motifs in a knowledge graph.
 
@@ -31,36 +72,34 @@ def count_knowledge_motifs(graph: nx.Graph, motifs: dict) -> dict:
     ----------
     graph : A knowledge graph.
 
-    motifs : The motifs. 
+    motif : The motif.
 
     Returns
     -------
-    mcount : The motif counts.
+    mcount : The motif count.
     """
     # assert that the graph is a knowledge graph by checking whether nodes and edges have a type
     assert all([graph.nodes[node]["type"] for node in graph.nodes()])
 
     # treat the knowledge graph as a homogeneous network and get the candidate motifs
-    m_candidates = get_candidate_motifs(graph, motifs)
+    m_candidates = get_candidate_motifs(graph, motif)
 
-    # get the node and edge permutations of the input motifs
-    m_permutations = {}
+    # get the node and edge permutations of the input motif
+    m_permutations = []
 
-    for m_id in motifs.keys():
-        m_permutations[m_id] = get_motif_permutations(graph.subgraph(motifs[m_id]))
+    m_permutations = get_motif_permutations(graph.subgraph(motif))
 
-    # count the motifs using test_candidate
-    m_count = dict(zip(motifs.keys(), list(map(int, np.zeros(len(motifs))))))
+    # count the motif using test_candidate
+    m_count = 0
 
-    for m_id in m_candidates.keys():
-        m_matches = [m_candidates[m_id][i] for i in range(len(m_candidates[m_id])) if
-                        test_candidate(m_permutations[m_id][0], m_permutations[m_id][1], m_candidates[m_id][i])]
-        m_count[m_id] = len(m_matches)
+    for candidate in m_candidates:
+        if test_candidate(m_permutations[0], m_permutations[1], candidate):
+            m_count += 1
 
     return m_count
 
 
-def get_candidate_motifs(graph: nx.Graph, motifs: dict) -> dict:
+def get_candidate_motifs(graph: nx.Graph, motif: nx.Graph) -> list:
     """
     This function extracts all candidate motifs from a homogeneous network.
 
@@ -68,13 +107,12 @@ def get_candidate_motifs(graph: nx.Graph, motifs: dict) -> dict:
     ----------
     graph : A homogeneous network.
 
-    motifs : The motifs.
+    motif : The motif.
 
     Returns
     -------
-    m_candidates : The candidates for each motif.
+    m_candidates : The candidates for the motif.
     """
-    m_candidates = dict(zip(motifs.keys(), [[] for i in range(len(motifs.keys()))]))
     nodes = graph.nodes()
 
     triplets = list(itertools.product(*[nodes, nodes, nodes]))
@@ -83,12 +121,12 @@ def get_candidate_motifs(graph: nx.Graph, motifs: dict) -> dict:
     u_triplets = []
     [u_triplets.append(trip) for trip in triplets if not u_triplets.count(trip)]
 
+    m_candidates = []
+
     for trip in u_triplets:
         sub_gr = graph.subgraph(trip)
-        mot_match = list(map(lambda mot_id: nx.is_isomorphic(sub_gr, motifs[mot_id]), motifs.keys()))
-        match_keys = [list(motifs.keys())[i] for i in range(len(motifs)) if mot_match[i]]
-
-        m_candidates[match_keys[0]].append(trip)
+        if nx.is_isomorphic(sub_gr, motif):
+            m_candidates.append(sub_gr)
 
     return m_candidates
 

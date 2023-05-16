@@ -75,8 +75,7 @@ def plot_significance_profile(significance_profile: dict) -> None:
 
     Parameters
     ----------
-    significance_profile : dict
-        The significance profile.
+    significance_profile : The significance profile.
 
     Returns
     -------

@@ -93,24 +93,15 @@ def load_from_json(filename, dataframe):
     return df
 
 
-def load_from_csv(filename, dataframe, preprocessed, variables):
+def load_from_csv(filename: str, dataframe: pd.DataFrame) -> pd.DataFrame:
     """
     This function loads a Japanese dataset from a .csv file.
 
     Parameters
     ----------
-    filename : str
-        The filename of the Japanese dataset.
+    filename : The filename of the Japanese dataset.
 
-    dataframe : pandas dataframe
-        The dataframe to which the new dataset should be appended.
-
-    preprocessed : bool
-        Whether the dataset is already in the correct format,
-        i.e. contains only variables in the dataframe.
-
-    variables : list
-        The variables that should be loaded from the dataset.
+    dataframe : The dataframe to which the new dataset should be appended.
 
     Returns
     -------
@@ -120,28 +111,13 @@ def load_from_csv(filename, dataframe, preprocessed, variables):
     # check what columns are in the internal dataframe
     columns = list(dataframe.columns)
 
-    if preprocessed:
-        # load csv file using pandas
-        df = pd.read_csv(filename)
+    # load csv file using pandas
+    df = pd.read_csv(filename)
 
-        # only keep the variables that are columns in the internal dataframe
-        df = df[columns]
+    # only keep the variables that are columns in the internal dataframe
+    df = df[columns]
 
-        # concatenate the company information to the dataframe
-        dataframe = dataframe.append(df, ignore_index=True)
-
-    else:
-        # initialize an empty dataframe with the columns in the internal dataframe
-        df = pd.DataFrame(columns=columns)
-
-        for variable in variables:
-            if variable == "supplier":
-                df = pp.load_supplier_from_csv(filename, df)
-
-            else:
-                raise ValueError("Variable not recognized:", variable)
-
-        # concatenate the company information to the dataframe
-        dataframe = dataframe.append(df, ignore_index=True)
+    # concatenate the company information to the dataframe
+    dataframe = dataframe.append(df, ignore_index=True)
 
     return dataframe
