@@ -114,3 +114,28 @@ class NetworkDataset:
                                               network1_type, network2_type)
 
         self.knowledge_graphs[network1_type + "_" + network2_type] = knowledge_graph
+
+
+    def extend_heterogeneous_network(self, ht_network_type: str, hm_network_type: str) -> None:
+        """
+        This method extends a heterogeneous network
+        by  a homogeneous network and appends it to the knowledge graph dictionary.
+
+        Parameters
+        ----------
+        ht_network_type : The type of the heterogeneous network.
+
+        hm_network_type : The type of the homogeneous network.
+
+        Returns
+        -------
+        None : The extended knowledge graph is appended to the knowledge graph dictionary.
+        """
+        assert ht_network_type in self.knowledge_graphs, "The heterogeneous network has not been created yet."
+        assert hm_network_type in self.networks, "The homogeneous network has not been created yet."
+
+        knowledge_graph = ht.extend_network(self.knowledge_graphs[ht_network_type],
+                                            self.networks[hm_network_type],
+                                            ht_network_type, hm_network_type)
+
+        self.knowledge_graphs[ht_network_type + "_" + hm_network_type] = knowledge_graph

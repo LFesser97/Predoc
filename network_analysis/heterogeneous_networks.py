@@ -19,6 +19,7 @@ import pandas as pd
 
 import visualize_knowledge_graphs as vkg
 import heterogeneous_motifs as ht
+import homogeneous_networks as hn
 
 
 # functions for creating knowledge graphs
@@ -51,12 +52,21 @@ class heterogeneous_network(nx.Graph):
         """
         self = knowledge_graph = nx.compose(network1, network2)
 
-        # add the type of the edges to the knowledge graph
-        for edge in knowledge_graph.edges():
-            if edge[0] in network1.nodes():
-                knowledge_graph.edges[edge]["type"] = network1_type
-            else:
-                knowledge_graph.edges[edge]["type"] = network2_type
+        # check if network1 and network2 are both instances of homogeneous_network
+        if isinstance(network1, hn.homogeneous_network) and isinstance(network2, hn.homogeneous_network):
+
+            # add the type of the edges to the knowledge graph
+            for edge in knowledge_graph.edges():
+                if edge[0] in network1.nodes():
+                    knowledge_graph.edges[edge]["type"] = network1_type
+                else:
+                    knowledge_graph.edges[edge]["type"] = network2_type
+
+        # otherwise, network1 is a heterogeneous network, which we extend
+        else:
+            for edge in knowledge_graph.edges():
+                if edge[0] in network2.nodes():
+                    knowledge_graph.edges[edge]["type"] = network1_type
 
 
     def visualize(self) -> None:
