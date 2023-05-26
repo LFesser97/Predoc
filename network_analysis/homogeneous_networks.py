@@ -23,7 +23,7 @@ import visualize_networks as vn
 
 # functions for creating networks
 
-class homogeneous_network(nx.Graph):
+class homogeneous_network():
     """
     A class specifically for homogeneous networks that
     extends the networkx.Graph class with additional methods,
@@ -224,12 +224,12 @@ def create_shareholder_network(dataset: pd.DataFrame) -> nx.Graph:
 
     try:
         for index, row in dataset.iterrows():
-            for shareholder in row["main_shareholders"]:
-                network.add_edge(shareholder, row["title"])
+            for shareholder in row["shareholders"]:
+                network.add_edge(shareholder, row["name"])
 
         # append the type of the nodes to the network
         for node in network.nodes():
-            if node in dataset["title"].values:
+            if node in dataset["name"].values:
                 network.nodes[node]["type"] = "company"
             else:
                 network.nodes[node]["type"] = "Bank/ Individual"
@@ -238,11 +238,11 @@ def create_shareholder_network(dataset: pd.DataFrame) -> nx.Graph:
         # print("The dataset does not contain a 'Shareholders' column.")
         for index, row in dataset.iterrows():
             for shareholder in row["shareholders"]:
-                network.add_edge(shareholder, row["title"])
+                network.add_edge(shareholder, row["name"])
 
         # append the type of the nodes to the network
         for node in network.nodes():
-            if node in dataset["title"].values:
+            if node in dataset["name"].values:
                 network.nodes[node]["type"] = "company"
             else:
                 network.nodes[node]["type"] = "Bank/ Individual"

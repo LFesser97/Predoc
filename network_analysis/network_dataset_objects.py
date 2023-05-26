@@ -110,7 +110,7 @@ class NetworkDataset:
         assert network1_type in self.networks, "The first network has not been created yet."
         assert network2_type in self.networks, "The second network has not been created yet."
 
-        knowledge_graph = ht.connect_networks(self.networks[network1_type], self.networks[network2_type],
+        knowledge_graph = ht.heterogeneous_network(self.networks[network1_type].graph, self.networks[network2_type].graph,
                                               network1_type, network2_type)
 
         self.knowledge_graphs[network1_type + "_" + network2_type] = knowledge_graph
