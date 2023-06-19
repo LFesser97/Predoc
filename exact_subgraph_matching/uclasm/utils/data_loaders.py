@@ -7,7 +7,7 @@ from scipy.sparse import csr_matrix
 
 def edgelist_to_adjs(edgelist, nodelist=None):
     edgecounts = edgelist.groupby(by=edgelist.columns.tolist(),
-                                  as_index=False).size().reset_index(names="count") # 
+                                  as_index=False).size().reset_index(names="count")
 
     if "channel" in edgelist.columns:
         channels = edgecounts.channel.unique()
