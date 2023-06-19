@@ -1,0 +1,11 @@
+Node/Edge,NodeId/Source,Label/Destination,Channel
+v,a,0
+v,b,0
+v,c,0
+v,d,0
+e,a,b,0
+e,a,c,0
+e,a,d,0
+e,b,c,0
+e,b,d,0
+e,c,d,0
