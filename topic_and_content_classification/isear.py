@@ -103,6 +103,26 @@ def load_binary_isear_labels(isear: pd.core.frame.DataFrame, int_low: int, int_h
     return labels
 
 
+def load_isear_labels(isear: pd.core.frame.DataFrame, int_low: int, int_high: int) -> list:
+    """
+    Load the labels of the ISEAR dataset.
+
+    Parameters
+    ----------
+    isear : The ISEAR dataset.
+    
+    int_low : The lower bound of the interval of labels to load.
+
+    int_high : The upper bound of the interval of labels to load.
+
+    Returns
+    -------
+    labels : The labels of the ISEAR dataset.
+    """
+    labels = [isear['EMOT'][i] - 1 for i in range(int_low, int_high)]
+    return labels
+
+
 def get_correlation(isear: pd.core.frame.DataFrame, variable: str,
                     error_type: str, true_positives: list, retrieval: list) -> tuple:
     """
