@@ -195,3 +195,44 @@ class CorporaComparison:
         cos_dist = 1 - np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
 
         return cos_dist
+    
+
+    def alt_voc_drift(content_words: dict, test_doc: str, most_changed_words: bool=False) -> float:
+        """
+        Computes an alternative definition of vocabulary drift.
+
+        Parameters
+        ----------
+        content_words : A dictionary of content words and their
+                        average frequencies in the baseline corpus.
+
+        test_doc : The test document.
+
+        most_changed_words : A boolean indicating whether to print
+                             the 10 most changed words.
+
+        Returns
+        -------
+        alt_voc_drift : The alternative definition of vocabulary drift.
+        """
+        # compute the word frequencies in the test document
+        word_freqs = {}
+        
+        for word in content_words:
+            word_freqs[word] = test_doc.count(word)
+
+        # compute the alternative definition of vocabulary drift
+        alt_voc_drift = {}
+        
+        for word in content_words:
+            alt_voc_drift[word] = (word_freqs[word] - content_words[word])**2
+
+        alt_voc_drift = np.sum(list(alt_voc_drift.values()))
+
+        # print the 10 most changed words
+        if most_changed_words:
+            # sort the words by their alt_voc_drift values
+            
+
+
+        return alt_voc_drift

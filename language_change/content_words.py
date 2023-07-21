@@ -49,7 +49,6 @@ def find_common_unigrams(text: str, n: int) -> list:
     return [unigram[0] for unigram in sorted_unigrams[:n]]
 
 
-
 def find_common_bigrams(text: str, n: int) -> list:
     """
     Given a text, find the n most common bigrams.
@@ -148,7 +147,20 @@ def get_nlkt_stop_words() -> list:
     from nltk.corpus import stopwords
 
     # return the stop words
-    return stopwords.words('english')
+    stop_words = stopwords.words('english')
+
+    # extend the stop words with the following words
+    stop_words.extend(['york', 'states', 'book', 'part', 'cambridge', 
+                       'harvard', 'institution', 'press', 'even', 'princetion',
+                       'united', 'known', 'chapter', 'chicago', 'brookings', 
+                       'washington', 'oxford', 'paper', 'clarendon', 'hopkins',
+                       'cent', 'wiley', 'chapters', 'publishing', 'would', 'first',
+                       'american', 'review', 'bureau', 'per', 'em', 'great', 'years',
+                       'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight',
+                        'nine', 'ten', 'zero', 'de', 'reviews', 'graduate', 'volume'])
+
+    # return the stop words
+    return stop_words
 
 
 def docs_to_lowercase(documents: list) -> list:
@@ -198,7 +210,48 @@ def remove_abbreviations(words: list) -> list:
     words_without_abbreviations : The list of words without abbreviations.
     """
     # return the list of words without abbreviations
-    return [word for word in words if not word.endswith('.')]
+    return [word for word in words if not word.endswith('.') and not word.endswith(':') and not word.endswith(',')]
+
+
+def remove_abbreviations_from_bigrams(bigrams: list) -> list:
+    """
+    Filter out abbreviations from a list of bigrams,
+    where abbreviations are of the form 'word1 word2.',
+    or 'word1 word2:' or 'word1 word2,' or 'word1. word2',
+    or 'word1: word2' or 'word1, word2', or 'word1 word2&',
+    or 'word1& word2'.
+
+    Parameters
+    ----------
+    bigrams : The list of bigrams to filter abbreviations from.
+
+    Returns
+    -------
+    bigrams_without_abbreviations : The list of bigrams without abbreviations.
+    """
+    # return the list of bigrams without abbreviations
+    return [bigram for bigram in bigrams if not bigram[0].endswith('.') 
+            and not bigram[0].endswith(':') and not bigram[0].endswith(',') 
+            and not bigram[1].endswith('.') and not bigram[1].endswith(':') 
+            and not bigram[1].endswith(',') and not bigram[0].endswith('&') 
+            and not bigram[1].endswith('&') and not bigram[0].endswith(';')
+            and not bigram[1].endswith(';')]
+
+
+def remove_single_letter_bigrams(bigrams: list) -> list:
+    """
+    Remove bigrams where at least one word consists of only one character.
+
+    Parameters
+    ----------
+    bigrams : The list of bigrams to remove single letter bigrams from.
+
+    Returns
+    -------
+    bigrams_without_single_letter_bigrams : The list of bigrams without single letter bigrams.
+    """
+    # return the list of bigrams without single letter bigrams
+    return [bigram for bigram in bigrams if len(bigram[0]) > 1 and len(bigram[1]) > 1]
 
 
 def remove_numerical_words(words: list) -> list:
@@ -332,3 +385,94 @@ def remove_universities_from_bigrams(bigrams: list) -> list:
     """
     # return the list of bigrams without universities
     return [bigram for bigram in bigrams if bigram[0] not in ['university', 'universities'] and bigram[1] not in ['university', 'universities']]
+
+
+def convert_bigrams_to_unigrams(bigrams: list) -> list:
+    """
+    Given a list of bigrams, convert the bigrams to unigrams.
+    Include a space between the two words in the bigram if
+    there is no space between them already.
+
+    Parameters
+    ----------
+    bigrams : The list of bigrams to convert to unigrams.
+
+    Returns
+    -------
+    unigrams : The list of unigrams.
+    """
+    # return the list of unigrams
+    return [bigram[0] + ' ' + bigram[1] if bigram[0][-1] != ' ' else bigram[0] + bigram[1] for bigram in bigrams]
+
+
+def collect_unigrams(list_of_unigrams_lists: list) -> list:
+    """
+    Given a list of lists of unigrams, collect the unigrams
+    into a single list and remove duplicates.
+
+    Parameters
+    ----------
+    list_of_unigrams_lists : The list of lists of unigrams to collect.
+
+    Returns
+    -------
+    unigrams : The list of unigrams.
+    """
+    # return the list of unigrams
+    return list(set([unigram for unigrams_list in list_of_unigrams_lists for unigram in unigrams_list]))
+
+
+def get_content_words(documents: list) -> list:
+    """
+    Given a list of documents, get the content words from the documents.
+
+    Parameters
+    ----------
+    documents : The list of documents to get the content words from.
+
+    Returns
+    -------
+    content_words : The list of content words.
+    """
+    stop_words = get_nlkt_stop_words()
+
+    # convert documents to lowercase and remove line breaks
+    documents = remove_line_breaks(docs_to_lowercase(documents))
+
+    # find the most common unigrams in each document
+    unigrams = []
+    num_unigrams = 30
+
+    for document in documents:
+        raw_unigrams = find_common_unigrams(document, num_unigrams)
+
+        # filter unigrams
+        unigrams.append(remove_numerical_words(remove_abbreviations(filter_unigrams(raw_unigrams, stop_words))))
+
+    # find the most common bigrams in each document
+    bigrams = []
+    num_bigrams = 70
+
+    for document in documents:
+        raw_bigrams = find_common_bigrams(document, num_bigrams)
+
+        # filter bigrams
+        bigrams.append(remove_single_letter_bigrams(remove_universities_from_bigrams(remove_abbreviations_from_bigrams(remove_stopwords_from_bigrams(raw_bigrams, stop_words)))))
+
+    # convert bigrams to unigrams
+    unigrams_from_bigrams = []
+
+    for bigrams_list in bigrams:
+        unigrams_from_bigrams.append(convert_bigrams_to_unigrams(bigrams_list))
+
+    # add unigrams_from_bigrams[i] to unigrams[i]
+    for i in range(len(unigrams)):
+        unigrams[i] += unigrams_from_bigrams[i]
+    
+    # collect unigrams
+    unigrams = collect_unigrams(unigrams)
+
+    # collect unigrams from bigrams
+    unigrams_from_bigrams = collect_unigrams(unigrams_from_bigrams)
+
+    return unigrams + unigrams_from_bigrams
