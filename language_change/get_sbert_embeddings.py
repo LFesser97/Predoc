@@ -14,7 +14,7 @@ import pickle
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-import defaultdict
+from collections import defaultdict
 import torch
 
 
