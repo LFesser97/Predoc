@@ -16,8 +16,16 @@ import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from spellchecker import SpellChecker
+from nltk.corpus import wordnet
+from nltk.tokenize import word_tokenize
+
 
 spell = SpellChecker()
+
+nltk.download('stopwords')
+nltk.download('punkt')
+nltk.download('averaged_perceptron_tagger')
+nltk.download('wordnet')
 
 
 # Define functions
