@@ -177,6 +177,7 @@ def get_token_embed_dict(sentences, model, tokenizer, batch_size=32, max_len=512
 
     return token_embedding_dict
 
+
 def get_paper_metadata(data: list) -> pd.DataFrame:
     """
     Get the paper's metadata.
@@ -212,8 +213,6 @@ def get_paper_metadata(data: list) -> pd.DataFrame:
     return df
 
 
-
-
 def save_embed_dicts_all_years(data, model, tokenizer, batch_size=32, max_len=512,
                                device='cuda', reembed=False, savedir="/mnt/122a7683-fa4b-45dd-9f13-b18cc4f4a187/change_detection/sbert_embedding_year/", 
                                pooling_type='concat',model_type="bert") -> dict:
@@ -244,7 +243,7 @@ def save_embed_dicts_all_years(data, model, tokenizer, batch_size=32, max_len=51
             # Save the token embedding dict for each year as pickle file
             print("saving token embedding dict for year",year)
         
-            token_embedd_dict_year=get_token_embed_dict(text_list_year, model, tokenizer, batch_size, max_len, device,pooling_type,model_type)
+            token_embedd_dict_year=get_token_embed_dict(text_list_year, model, tokenizer, batch_size, max_len, device, pooling_type, model_type)
             unique_tokens_year=list(token_embedd_dict_year.keys())
             unique_words_list.extend(unique_tokens_year)
             print("Saving at",f"{savedir}token_embedding_dict_{year}.pkl")
@@ -305,7 +304,6 @@ def reformat_embedding_dict(embedding_dict: dict) -> dict:
     return reformatted_embedding_dict
 
 
-"""
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_name', type=str, default='bert-base-multilingual-uncased')
@@ -357,5 +355,3 @@ if __name__ == '__main__':
 
     # Save the metadata as csv
     metadata.to_csv("/mnt/122a7683-fa4b-45dd-9f13-b18cc4f4a187/change_detection/sbert_embedding_year/metadata.csv",index=False)
-
-"""

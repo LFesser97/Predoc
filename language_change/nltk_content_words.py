@@ -300,3 +300,33 @@ def preprocess_docs(documents: list) -> list:
         preprocessed_docs.append(document)
 
     return preprocessed_docs
+
+
+def get_top_k_content_words(document: str, top: int = 10) -> list:
+    """
+    Given a document, returns the top k content words.
+
+    Parameters
+    ----------
+    document : A string representing a document.
+
+    top : An integer representing the number of top content words to return.
+
+    Returns
+    ----------
+    A list of the top k content words.
+    """
+    content_words_set = set(get_nltk_content_words([document]))
+    content_words_set = filter_numerical_values(filter_verbs(clean_content_words(list(content_words_set))))
+
+    word_counts = {}
+
+    # count the number of appearances of each content word in each document
+    for word in content_words_set:
+        word_counts[word] = word_counts.get(word, 0) + document.count(word)
+
+    # sort the content words by their counts
+    sorted_word_counts = sorted(word_counts.items(), key=lambda x: x[1], reverse=True)
+
+    # get the k most frequent content words and return them as a list
+    return [word[0] for word in sorted_word_counts[:top]]
