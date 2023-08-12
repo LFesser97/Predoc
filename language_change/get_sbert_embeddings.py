@@ -109,17 +109,38 @@ def save_embed_dicts_all_years(data, model, tokenizer, batch_size=32, max_len=51
     return embedding_dict
 
 
+def get_content_words_only(token_embedding_dict: dict, content_words: set) -> dict:
+    """
+    Create a new token embedding dict that only contains the content words
+    as keys and the embeddings as values.
+
+    Follow the same format as the original token embedding dict:
+    token_embedding_dict=defaultdict(list)
+
+    for i in range(len(token_list)):
+        for j in range(len(token_list[i])):
+            token_embedding_dict[token_list[i][j]].append({i:token_embeddings_mean_list[i][j]})
+    """
+    content_word_embedding_dict=defaultdict(list)
+
+    for word in tqdm(content_words):
+        if word in token_embedding_dict:
+            content_word_embedding_dict[word]=token_embedding_dict[word]
+
+    return content_word_embedding_dict
+
+
 def get_token_embed_dict(sentences, model, tokenizer, batch_size=32, max_len=512,
                          device='cuda',pooling_type="concat",model_type="bert") -> dict:
     """
     Get the token embeddings for each word in the sentence (mean-aggregated wordpiece
     embeddings) in the form word:embedding_list
     """
-    embeddings, input_ids, attention_mask = get_token_embeddings(sentences, model, tokenizer, batch_size, max_len, device,pooling_type,model_type)
+    embeddings, input_ids, attention_mask = get_token_embeddings(sentences, model, tokenizer, batch_size, max_len, device, pooling_type, model_type)
     non_padding_embeddings, non_padding_ids, non_padding_attention_mask = remove_padding_tokens(embeddings, input_ids, attention_mask)
-    token_list=convert_input_ids_to_tokens(non_padding_ids, tokenizer)
-    token_list,aggregated_embeddings=aggregate_wordpiece(token_list,non_padding_embeddings)
-    token_embedding_dict=combine_means_with_tokens(token_list,aggregated_embeddings)
+    token_list = convert_input_ids_to_tokens(non_padding_ids, tokenizer)
+    token_list, aggregated_embeddings = aggregate_wordpiece(token_list, non_padding_embeddings)
+    token_embedding_dict = combine_means_with_tokens(token_list, aggregated_embeddings)
 
     return token_embedding_dict
 
@@ -212,13 +233,13 @@ def aggregate_wordpiece(tokens_list: list, embedding_tensor: torch.tensor) -> tu
 
     for i in range(len(tokens_list)):
         tokens=[token for token in tokens_generator(tokens_list[i])]
-        tokenized_text = [token for _,_,token in tokens]
+        tokenized_text = [token for _, _,token in tokens]
         token_boundaries = [(start, ended) for start, ended, _ in tokens]
         token_embeddings = torch.stack([embedding_tensor[i][start:end,:].mean(dim=0) for start, end in token_boundaries])
         final_token_list.append(tokenized_text)
         final_embedding_list.append(token_embeddings)
 
-    return final_token_list,final_embedding_list
+    return final_token_list, final_embedding_list
 
 
 def tokens_generator(toks):
@@ -246,7 +267,7 @@ def combine_means_with_tokens(token_list: list, token_embeddings_mean_list: list
     Combine the token embeddings with the input ids - a list of means for each token
     """
     # Convert input_ids_list_flat to np array, convert token_embeddings_mean_list to np array
-    token_embeddings_mean_list=[ x.cpu().numpy() for x in token_embeddings_mean_list]
+    token_embeddings_mean_list=[x.cpu().numpy() for x in token_embeddings_mean_list]
     token_embedding_dict=defaultdict(list)
 
     for i in range(len(token_list)):
