@@ -137,3 +137,52 @@ def get_docs(path: str, year: int) -> list:
     documents = preprocess_docs(baseline_docs_raw)
 
     return documents
+
+
+def get_dict_of_pairs(baseline_docs_with_title: list, content_words: list) -> dict:
+    """
+    Given a list of documents and a list of content words, returns a dictionary
+    with content words as keys and a list of ten tuples. Each tuple contains
+    two documents from baseline_docs that contain the content word in the key.
+
+    Parameters
+    ----------
+    baseline_docs : A list of documents.
+
+    content_words : A list of content words.
+
+    Returns
+    ----------
+    dict_of_pairs : A dictionary with content words as keys and a list of ten tuples.
+    """
+    dict_of_pairs = {}
+    for word in content_words:
+        dict_of_pairs[word] = []
+
+    for word in content_words:
+        # get indices of documents that contain word
+        indices = [i for i, doc in enumerate(baseline_docs_with_title) if word in doc[0]]
+
+        # get all pairs of documents that contain word
+        pairs = [[{'title': baseline_docs_with_title[i][1], 'text': baseline_docs_with_title[i][0]},
+            {'title': baseline_docs_with_title[j][1], 'text': baseline_docs_with_title[j][0]}] for i in indices for j in indices if i < j]
+
+        # get ten random pairs
+        random_pairs = []
+        for i in range(10):
+            random_pairs.append(pairs.pop(np.random.randint(len(pairs))))
+
+        # for each tuple in random_pairs, and for each document in the tuple,
+        # add only the first time the content word appears in the document
+        # with 64 words on each side of the content word
+        for pair in random_pairs:
+            for i in range(2):
+                doc = pair[i]['text']
+                if word in doc:
+                    index = doc.index(word)
+                    doc = doc[index - 64:index + 64]
+                    pair[i]['text'] = doc
+
+        dict_of_pairs[word] = random_pairs
+
+    return dict_of_pairs
