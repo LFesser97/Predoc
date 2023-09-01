@@ -43,6 +43,27 @@ class preprocessing:
                 no_punct_documents.append(document)
 
         return no_punct_documents
+    
+
+    @staticmethod
+    def remove_references(documents: list) -> list:
+        """
+        Given a list of documents, removes the references section from each document.
+        """
+        # set every document to lowercase
+        documents = [document.lower() for document in documents]
+
+        # find the last occurrence of the word "references" or "bibliography" in each document
+        references_indices = []
+        for document in documents:
+            references_indices.append(max(document.rfind('references'), document.rfind('bibliography')))
+
+        # remove the references section from each document
+        no_references_documents = []
+        for i in range(len(documents)):
+            no_references_documents.append(documents[i][:references_indices[i]])
+
+        return no_references_documents
 
 
     @staticmethod

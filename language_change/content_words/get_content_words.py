@@ -13,6 +13,7 @@ import json
 import numpy as np
 import pandas as pd
 import argparse
+import multiprocessing
 from tqdm import tqdm
 
 import nltk
@@ -173,7 +174,13 @@ if __name__ == '__main__':
     documents = content_words._read_input_file(args.input_file, args.jstor)
 
     # get content words
-    content_words_raw = content_words.get_content_words(documents, not args.document)
+    # use multi-processing to speed up the process, i.e. use all available cores
+    # to process the documents in parallel
+    pool = multiprocessing.Pool()
+    content_words_raw = pool.map(content_words.get_content_words, documents, not args.document)
+    pool.close()
+    pool.join()
+    
     content_words_filtered = content_words._filter_documents(content_words_raw)
 
     # write the output file

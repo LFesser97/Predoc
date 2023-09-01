@@ -127,10 +127,10 @@ if __name__ == "__main__":
     parser.add_argument('plot_clusters', type=bool, help='Whether to plot the clusters.')
 
     # hyperparameters for hdbscan, slink, and hac. Default values are cluster_size_hp = 1, min_samples_hp = 1, eps = 0.5, distance_threshold = 0.5
-    parser.add_argument('cluster_size_hp', type=int, help='The minimum size of clusters for hdbscan.')
-    parser.add_argument('min_samples_hp', type=int, help='The minimum number of samples in a neighborhood for hdbscan.')
-    parser.add_argument('eps', type=float, help='The maximum distance between two samples for slink.')
-    parser.add_argument('distance_threshold', type=float, help='The threshold to decide the cluster size for hac.')    
+    parser.add_argument('--cluster_size_hp', type=int, help='The minimum size of clusters for hdbscan.')
+    parser.add_argument('--min_samples_hp', type=int, help='The minimum number of samples in a neighborhood for hdbscan.')
+    parser.add_argument('--eps', type=float, help='The maximum distance between two samples for slink.')
+    parser.add_argument('--distance_threshold', type=float, help='The threshold to decide the cluster size for hac.')    
     args = parser.parse_args()
 
     # read the input file
