@@ -64,6 +64,19 @@ class preprocessing:
             no_references_documents.append(documents[i][:references_indices[i]])
 
         return no_references_documents
+    
+
+    @staticmethod
+    def prepare_full_jstor_data(jstor_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Given a dataframe with JSTOR data, keep only the columns 'id',
+        'title', 'abstract', 'fulltext', 'publicationYear', and 'creator'.
+        Rename the columns 'publicationYear' and 'creator' to 'year' and 'author'.
+        """
+        jstor_df = jstor_df[['id', 'title', 'abstract', 'fullText', 'publicationYear', 'creator']]
+        jstor_df = jstor_df.rename(columns={'publicationYear': 'year', 'creator': 'author'})
+
+        return jstor_df
 
 
     @staticmethod
