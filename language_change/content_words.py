@@ -476,3 +476,167 @@ def get_content_words(documents: list) -> list:
     unigrams_from_bigrams = collect_unigrams(unigrams_from_bigrams)
 
     return unigrams + unigrams_from_bigrams
+
+
+
+# create a function that takes in two lists with entries (mean, standard deviation) and
+# create a line plot with the means and standard deviations
+
+def plot_mean_and_standard_deviation(data_1: list, data_2: list, x_axis_labels: list):
+    """
+    Given two lists of data of the form [(mean, standard deviation), ...],
+    plot the means as two lines, one for each list, and plot the standard deviations
+    as boxes around the lines.
+
+    Parameters
+    ----------
+    data_1 : The first list of data.
+
+    data_2 : The second list of data.
+
+    x_axis_labels : The labels for the x-axis.
+    """
+    # import packages
+    import matplotlib.pyplot as plt
+
+    # create the figure
+    plt.figure(figsize=(10, 5))
+
+    # plot the means
+    plt.plot(data_1, label='BERT')
+    plt.plot(data_2, label='SBERT')
+
+    # plot the standard deviations as error bars around the means
+    plt.errorbar(range(len(data_1)), [data[0] for data in data_1], [data[1] for data in data_1], linestyle='None', marker='^', color='blue')
+    plt.errorbar(range(len(data_2)), [data[0] for data in data_2], [data[1] for data in data_2], linestyle='None', marker='^', color='orange')
+
+    # set the x-axis labels
+    plt.xticks(range(len(x_axis_labels)), x_axis_labels)
+
+    # set the title and the legend
+    plt.title('Mean and standard deviation of the cosine similarity between the embeddings of the content words')
+    plt.legend()
+
+    # show the plot
+    plt.show()
+
+
+def substring_matching(content_words: set) -> set:
+    """
+    For each content word, check if it is a substring of another content word.
+    If so, remove the content word from the set of content words.
+    """
+    # create a list of the content words
+    content_words_list = list(content_words)
+
+    # for each content word (use tqdm)
+    for i in tqdm(range(len(content_words_list))):
+        # for each content word
+        for j in range(len(content_words_list)):
+            # if the content word is a substring of another content word
+            if i != j and content_words_list[i] in content_words_list[j]:
+                # remove the content word from the set of content words
+                content_words.remove(content_words_list[i])
+
+    return content_words
+
+
+def create_frequency_hist(sorted_content_words: list) -> None:
+    """
+    Given a list of content words with entries of the form
+    (content word, frequency), create a histogram of the frequencies.
+    On the y-axis, plot the percentage of content words with a given frequency.
+    Use a logarithmic scale for the y-axis.
+    """
+    # import packages
+    import matplotlib.pyplot as plt
+
+    # create the figure
+    plt.figure(figsize=(10, 5))
+
+    # create the histogram
+    plt.hist([content_word[1] for content_word in sorted_content_words], bins=100, density=True, cumulative=True, histtype='step')
+
+    # set the title and the labels
+    plt.title('Frequency of content words')
+    plt.xlabel('Frequency')
+    plt.ylabel('Percentage of content words')
+
+    # set the y-axis to a logarithmic scale
+    plt.yscale('log')
+
+    # show the plot
+    plt.show()
+
+
+# count the number of appearances of an input string in a larger string
+# the input string need not be a single word
+
+def count_substring_matches(input_string: str, text: str) -> int:
+    """
+    Given an input string and a larger string, count the number of appearances
+    of the input string in the larger string.
+    """
+    # split the input string into words
+    input_string_split = input_string.split()
+
+    # count the number of appearances of the input string in the larger string
+    count = 0
+    for i in range(len(text.split()) - len(input_string_split) + 1):
+        if text.split()[i:i+len(input_string_split)] == input_string_split:
+            count += 1
+
+    return count
+
+
+# given a list of integers, create a line plot of the integers
+# the x-axis should be the indices of the integers + 1
+
+def plot_integers(integers: list) -> None:
+    """
+    Given a list of integers, create a line plot of the integers.
+    The x-axis should be the indices of the integers + 1.
+    """
+    # import packages
+    import matplotlib.pyplot as plt
+
+    # create the figure
+    plt.figure(figsize=(10, 5))
+
+    # create the line plot
+    plt.plot(range(1, len(integers) + 1), integers)
+
+    # set the title and the labels
+    plt.title('Number of content words with a given frequency')
+    plt.xlabel('Frequency')
+    plt.ylabel('Number of content words')
+
+    # start the y-axis at zero
+    plt.ylim(bottom=0)
+
+    # show the plot
+    plt.show()
+
+
+def get_n_gram_dict(list_of_strings: list) -> dict:
+    """
+    Given a list of strings, return a dictionary with the integers from 1
+    to the length of the longest n-gram as keys, and the number of n-grams
+    of length i as values.
+    """
+    # create a dictionary with the integers from 1 to the length of the longest n-gram as keys
+    # and the number of n-grams of length i as values
+    n_gram_dict = {}
+
+    # for each string in the list of strings
+    for string in list_of_strings:
+        # for each n-gram in the string
+        for i in range(1, len(string.split()) + 1):
+            # if the length of the n-gram is not in the dictionary, add it
+            if i not in n_gram_dict:
+                n_gram_dict[i] = 1
+            # if the length of the n-gram is in the dictionary, increase its count by 1
+            else:
+                n_gram_dict[i] += 1
+
+    return n_gram_dict
