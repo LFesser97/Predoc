@@ -11,6 +11,7 @@ This file contains all code for setting up the optimal transport problem.
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
+import random
 
 
 class GraphEnv:
@@ -49,21 +50,27 @@ class GraphEnv:
         assert len(var_2) == 2
 
         plans = []
+        i = 0
 
-        # sample a point from a 2D normal distribution with mean_1 and var_1
-        for i in range(num_plans):
-            source = np.random.multivariate_normal(mean_1, var_1)
-            target = np.random.multivariate_normal(mean_2, var_2)
+        # sample a point by taking the mean plus a random number from a Gaussian distribution with the given variance
+        while i < num_plans: 
+            source_mean = mean_1
+            source_perturbation = np.random.normal(0, var_1)
+            source_node = source_mean + [np.int(elem) for elem in source_perturbation]
 
-            # convert the sampled points to nodes in the graph
-            source_node = (int(source[0]), int(source[1]))
-            target_node = (int(target[0]), int(target[1]))
+            target_mean = mean_2
+            target_perturbation = np.random.normal(0, var_2)
+            target_node = target_mean + [np.int(elem) for elem in target_perturbation]
 
-            print(source_node, target_node)
+            # convert source and target node to tuples
+            source_node = tuple(source_node)
+            target_node = tuple(target_node)
 
-            # append the transport plan to the list of transport plans
-            plans.append((source_node, target_node)) 
-
+            # if source and target node are in the graph, append the transport plan to the list of transport plans
+            if source_node in self.graph.nodes and target_node in self.graph.nodes:
+                plans.append((source_node, target_node))
+                i += 1
+        
         self.transport_plans = plans
 
         # set the node weights of the graph to be the number of transport plans that start or end at the node
@@ -71,10 +78,8 @@ class GraphEnv:
             self.graph.nodes[node]['weight'] = 0
 
         for plan in self.transport_plans:
-            source_node = plan[0]
-            target_node = plan[1]
-            self.graph.nodes[source_node]['weight'] += 1
-            self.graph.nodes[target_node]['weight'] += 1
+            self.graph.nodes[plan[0]]['weight'] += 1
+            self.graph.nodes[plan[1]]['weight'] += 1
     
 
     def compute_transport_cost(self, transport_plans: list, preference: str='min_dist') -> float:
@@ -85,14 +90,15 @@ class GraphEnv:
         :param preference: The preference of the agent.
         :return: The transport cost of the given transport plans.
         """
-        # assert that preference is either 'min_dist' or 'min_cost'
-        assert preference in ['min_dist'], "Preference not supported. Preference must be 'min_dist'."
+        assert preference in ['min_dist', 'frechet_min_dist'], "Preference not supported. Preference must be 'min_dist'."
 
         # compute the transport cost of the given transport plans
         transport_cost = 0
         for plan in transport_plans:
             if preference == 'min_dist':
                 transport_cost += self.__compute_min_dist(plan)
+            elif preference == 'frechet_min_dist':
+                transport_cost += self.__compute_frechet_min_dist(plan)
             else:
                 raise NotImplementedError
             
@@ -112,13 +118,30 @@ class GraphEnv:
         # compute the minimum distance between the source and target node of the given transport plan
         source_node = transport_plan[0]
         target_node = transport_plan[1]
+
         # compute the shortest path between the source and target node
         shortest_path = nx.shortest_path(self.graph, source_node, target_node)
-        # compute the minimum distance between the source and target node,
-        # an edge that has been upgraded has a weight of 0.75, an edge that has not been upgraded has a weight of 1
         min_dist = sum([self.graph.edges[edge]['weight'] for edge in zip(shortest_path[:-1], shortest_path[1:])])
 
         return min_dist
+    
+
+    def __compute_frechet_min_dist(self, transport_plan: tuple) -> float:
+        """
+        Computes the minimum distance between the source and target node of the given transport plan
+        and multiplies the result with a random number sampled from a Frehet distribution with alpha=8.
+
+        :param transport_plan: A transport plan.
+        :return: The minimum distance between the source and target node of the given transport plan.
+        """
+        # assert that transport_plan is a tuple
+        assert isinstance(transport_plan, tuple)
+
+        # compute the minimum distance between the source and target node of the given transport plan
+        min_dist = self.__compute_min_dist(transport_plan)
+
+        # multiply the minimum distance with a random number sampled from a Frehet distribution with alpha=8
+        return min_dist * np.random.weibull(8, 1)[0]
     
 
     def upgrade_edge(self, edge: tuple, weight: float=0.75) -> None:
@@ -174,6 +197,96 @@ class GraphEnv:
         min_edge = min(transport_costs, key=transport_costs.get)
 
         return min_edge
+    
+
+    def mh_solve(self, budget: int=25, preference: str='min_dist') -> None:
+        """
+        Solves the optimal transport problem using the Metropolis-Hastings algorithm.
+
+        :param budget: The budget of the agent.
+        :param preference: The preference of the agent.
+        """
+        # randomly upgrade budget edges
+        for i in range(budget):
+            chosen_edge = self.__choose_random_edge()
+            self.upgrade_edge(chosen_edge)
+
+        initial_transport_cost = self.compute_transport_cost(self.transport_plans, preference)
+        self.transport_costs.append(initial_transport_cost)
+
+        transport_costs = [0, initial_transport_cost]
+
+        # temperature parameter
+        beta = 0.1
+
+        # while the difference between the current transport cost and the previous transport cost is greater than 0.1
+        while self.__convergence_criterion(transport_costs):
+            # run a single Metropolis-Hastings step
+            self.__mh_step(beta, transport_costs)
+            print("Current Step: ", len(transport_costs) - 1)
+            print("Current Transport Cost: ", transport_costs[-1])
+
+
+    def __convergence_criterion(self, transport_costs: list) -> bool:
+        """
+        Depending on the length of the list of transport costs,
+        if the last 10 transport costs have not had any improvement, return False.
+        """
+        for i in range(min(len(transport_costs), 10)):
+            if transport_costs[-i] < transport_costs[-i-1]:
+                return True            
+        return False
+
+
+    def __choose_random_edge(self, upgraded: bool=False) -> tuple:
+        """
+        Chooses a random edge from the graph.
+
+        :param upgraded: Whether to choose a random upgraded edge or a random non-upgraded edge.
+        :return: A random edge from the graph.
+        """
+        # choose a random upgraded edge
+        if upgraded:
+            return random.choice(self.upgraded_edges)
+        # choose a random non-upgraded edge
+        else:
+            return random.choice(list(set(self.graph.edges) - set(self.upgraded_edges)))
+
+
+    def __mh_step(self, beta: float, transport_costs: list) -> None:
+        """
+        Runs a single Metropolis-Hastings step. 
+        The agent randomly upgrades an edge and decides whether to keep the upgrade or not.
+
+        :param beta: The temperature parameter.
+        :param transport_costs: A list of previous transport costs.
+        """
+        # choose a random upgraded edge to downgrade
+        edge_to_remove = self.__choose_random_edge(upgraded=True)
+        self.graph.edges[edge_to_remove]['weight'] = 1
+        self.upgraded_edges.remove(edge_to_remove)
+
+        # choose a random edge to upgrade
+        chosen_edge = self.__choose_random_edge(upgraded=False)
+        self.upgrade_edge(chosen_edge)
+
+        # compute the transport cost of the transport plans if the edge was upgraded
+        transport_cost = self.compute_transport_cost(self.transport_plans)
+
+        # compute the acceptance probability
+        acceptance_probability = min(1, np.exp(-beta * (transport_cost - transport_costs[-1])))
+
+        # decide whether to keep the upgrade or not
+        if np.random.uniform(0, 1) < acceptance_probability:
+            transport_costs.append(transport_cost)
+        else:
+            self.graph.edges[chosen_edge]['weight'] = 1
+            self.upgraded_edges.remove(chosen_edge)
+            transport_costs.append(transport_costs[-1])
+
+            # upgrade the edge that was downgraded
+            self.graph.edges[edge_to_remove]['weight'] = 0.75
+            self.upgraded_edges.append(edge_to_remove)
 
 
     def plot_graph(self):
@@ -185,7 +298,9 @@ class GraphEnv:
         # adjust the size of the network nodes based on their weight
         weights = [self.graph.nodes[node]['weight'] for node in self.graph.nodes]
         weights = [50 + weight**2 for weight in weights]
-        nx.draw_networkx_nodes(self.graph, pos=pos, node_size=weights, node_color='blue')
+
+        # plot the network nodes with weight > 1 in blue, all other nodes in red
+        nx.draw_networkx_nodes(self.graph, pos=pos, node_size=weights, node_color=['red' if self.graph.nodes[node]['weight'] > 1 else 'blue' for node in self.graph.nodes])
 
         # plot the upgraded edges in red, all other edges in black
         nx.draw_networkx_edges(self.graph, pos=pos, edgelist=self.upgraded_edges, edge_color='red')
