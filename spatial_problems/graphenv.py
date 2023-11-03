@@ -12,6 +12,7 @@ import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 import random
+from tqdm import tqdm
 
 
 class GraphEnv:
@@ -162,6 +163,73 @@ class GraphEnv:
         self.upgraded_edges.append(edge)
 
 
+    def exact_solve(self, budget: int=6, preference: str='min_dist') -> None:
+        """
+        Solves the optimal transport problem exactly by computing the transport
+        cost associated with all possible upgrades of budget edges.
+
+        :param budget: The budget of the agent.
+        :param preference: The preference of the agent.
+        """
+        if budget > 6:
+            print("Warning: Exact solution may take a long time to compute.")
+        
+        # compute all possible subsets of edges of size budget
+        subsets = self.__generate_subsets_tuples(list(self.graph.edges), budget)
+
+        # create a dictionary that maps each subset of edges to the transport cost of the transport plans
+        # if the edges in the subset were upgraded
+        transport_costs = {}
+
+        for subset in tqdm(subsets):
+            # upgrade all edges in the subset
+            for edge in subset:
+                self.upgrade_edge(edge)
+
+            # compute the transport cost of the transport plans if the edges in the subset were upgraded
+            transport_costs[str(subset)] = self.compute_transport_cost(self.transport_plans, preference)
+
+            # downgrade all edges in the subset
+            for edge in subset:
+                self.graph.edges[edge]['weight'] = 1
+                self.upgraded_edges.remove(edge)
+
+        # choose the subset of edges that minimizes the transport cost of the transport plans
+        min_subset = min(transport_costs, key=transport_costs.get)
+
+        # convert the subset from a string to a list of tuples
+        min_subset = eval(min_subset)
+
+        # upgrade all edges in the subset
+        for edge in min_subset:
+            self.upgrade_edge(edge)
+
+        # compute the transport cost of the transport plans
+        transport_cost = self.compute_transport_cost(self.transport_plans, preference)
+
+        print("Transport Cost: ", transport_cost)
+        
+
+    def __generate_subsets_tuples(self, arr, k):
+        def generate_subsets_helper(start, current_subset):
+            if len(current_subset) == k:
+                subsets.append(list(current_subset))
+                return
+
+            for i in range(start, len(arr)):
+                current_subset.append(arr[i])
+                generate_subsets_helper(i + 1, current_subset)
+                current_subset.pop()
+
+        if k < 0 or k > len(arr):
+            return []
+
+        subsets = []
+        generate_subsets_helper(0, [])
+
+        return subsets
+
+
     def greedy_solve(self, budget: int=25, preference: str='min_dist') -> None:
         for i in range(budget):
             chosen_edge = self.__choose_best_edge()
@@ -216,11 +284,11 @@ class GraphEnv:
 
         transport_costs = [0, initial_transport_cost]
 
-        # temperature parameter
-        beta = 0.1
-
         # while the difference between the current transport cost and the previous transport cost is greater than 0.1
-        while self.__convergence_criterion(transport_costs):
+        # while self.__convergence_criterion(transport_costs):
+            # beta = self.__mh_scheduler(len(transport_costs))
+        for i in range(10000):
+            beta = self.__mh_scheduler(i)
             # run a single Metropolis-Hastings step
             self.__mh_step(beta, transport_costs)
             print("Current Step: ", len(transport_costs) - 1)
@@ -236,6 +304,16 @@ class GraphEnv:
             if transport_costs[-i] < transport_costs[-i-1]:
                 return True            
         return False
+    
+
+    def __mh_scheduler(self, iter: int) -> float:
+        """
+        Returns the temperature parameter for the Metropolis-Hastings algorithm.
+
+        :param iter: The current iteration of the algorithm.
+        :return: The temperature parameter for the Metropolis-Hastings algorithm.
+        """
+        return np.exp(-0.0005 * iter)
 
 
     def __choose_random_edge(self, upgraded: bool=False) -> tuple:
@@ -297,13 +375,14 @@ class GraphEnv:
 
         # adjust the size of the network nodes based on their weight
         weights = [self.graph.nodes[node]['weight'] for node in self.graph.nodes]
-        weights = [50 + weight**2 for weight in weights]
+        weights = [20 + weight**2 for weight in weights]
 
         # plot the network nodes with weight > 1 in blue, all other nodes in red
-        nx.draw_networkx_nodes(self.graph, pos=pos, node_size=weights, node_color=['red' if self.graph.nodes[node]['weight'] > 1 else 'blue' for node in self.graph.nodes])
+        nx.draw_networkx_nodes(self.graph, pos=pos, node_size=weights, node_color=['blue' if self.graph.nodes[node]['weight'] > 1 else 'grey' for node in self.graph.nodes])
 
-        # plot the upgraded edges in red, all other edges in black
-        nx.draw_networkx_edges(self.graph, pos=pos, edgelist=self.upgraded_edges, edge_color='red')
+        # plot the upgraded edges in red and increase their width by 2, 
+        # all other edges in black
+        nx.draw_networkx_edges(self.graph, pos=pos, edgelist=self.upgraded_edges, edge_color='red', width=2)
         nx.draw_networkx_edges(self.graph, pos=pos, edgelist=list(set(self.graph.edges) - set(self.upgraded_edges)), edge_color='black')
         
         plt.axis('off')
